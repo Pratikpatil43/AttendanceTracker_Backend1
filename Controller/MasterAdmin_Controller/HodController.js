@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt'); // Import bcrypt for hashing passwords
 const HOD = require('./../../models/MasterAdmin_models/HodModel');
 const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 
@@ -19,11 +20,14 @@ exports.addHOD = async (req, res) => {
       return res.status(400).json({ message: 'HOD with this username already exists' });
     }
 
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the saltRounds, can be adjusted for more security
+
     // Create the new HOD and associate with the MasterAdmin by ObjectId
     const newHOD = new HOD({
       name,
       username,
-      password, // Consider hashing the password here
+      password: hashedPassword, // Store the hashed password
       branch,
       masterAdmin: masterAdmin._id // Associate the MasterAdmin via _id
     });
@@ -36,6 +40,7 @@ exports.addHOD = async (req, res) => {
     res.status(500).json({ message: 'Failed to add HOD', error: error.message });
   }
 };
+
 
 
 // Function to get all HODs for a specific MasterAdmin

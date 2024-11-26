@@ -12,5 +12,7 @@ const requestSchema = new mongoose.Schema({
   rejectedAt: { type: Date },  // Timestamp when rejected
 });
 
-const Request = mongoose.model('Request', requestSchema);
+// Check if the model is already defined to prevent overwriting it
+const Request = mongoose.models.Request || mongoose.model('Request', requestSchema);
+
 module.exports = Request;

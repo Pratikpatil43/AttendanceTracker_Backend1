@@ -24,8 +24,6 @@ exports.addFaculty = async (req, res) => {
   }
 };
 
-
-
 // Get Faculty by username
 exports.getFaculty = async (req, res) => {
   try {
@@ -52,54 +50,50 @@ exports.getFaculty = async (req, res) => {
   }
 };
 
-
-
 // Update Faculty
 exports.updateFaculty = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name, username, password, branch, subject } = req.body;
-  
-      const faculty = await Faculty.findById(id);
-  
-      if (!faculty) {
-        return res.status(404).json({ message: 'Faculty not found' });
-      }
-  
-      // Update Faculty fields
-      faculty.name = name || faculty.name;
-      faculty.username = username || faculty.username;
-      faculty.password = password || faculty.password;
-      faculty.branch = branch || faculty.branch;
-      faculty.subject = subject || faculty.subject;
-  
-      // Save the updated faculty document
-      await faculty.save();
-  
-      res.status(200).json({ message: 'Faculty updated successfully', faculty });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to update Faculty', error: error.message });
-    }
-  };
+  try {
+    const { id } = req.params;
+    const { name, username, password, branch, subject } = req.body;
 
-  
+    const faculty = await Faculty.findById(id);
+
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty not found' });
+    }
+
+    // Update Faculty fields
+    faculty.name = name || faculty.name;
+    faculty.username = username || faculty.username;
+    faculty.password = password || faculty.password;
+    faculty.branch = branch || faculty.branch;
+    faculty.subject = subject || faculty.subject;
+
+    // Save the updated faculty document
+    await faculty.save();
+
+    res.status(200).json({ message: 'Faculty updated successfully', faculty });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update Faculty', error: error.message });
+  }
+};
+
 // Remove Faculty
 exports.removeFaculty = async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      const faculty = await Faculty.findById(id);
-  
-      if (!faculty) {
-        return res.status(404).json({ message: 'Faculty not found' });
-      }
-  
-      // Remove Faculty from the database
-      await Faculty.findByIdAndDelete(id);
-  
-      res.status(200).json({ message: 'Faculty removed successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to remove Faculty', error: error.message });
+  try {
+    const { id } = req.params;
+
+    const faculty = await Faculty.findById(id);
+
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty not found' });
     }
-  };
-  
+
+    // Remove Faculty from the database
+    await Faculty.findByIdAndDelete(id);
+
+    res.status(200).json({ message: 'Faculty removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to remove Faculty', error: error.message });
+  }
+};
