@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const hodRoutes = require('./MasterAdmin_routes/hodRoutes');
 const FacultyRoutes = require('./MasterAdmin_routes/FacultyRoutes');
 const masterAdminRoutes = require('./MasterAdmin_routes/MasterAdminRoutes')
-const connectDB = require('./MasterAdmin_config/db')
+const connectDB = require('../shared/database/db')
 
 const app = express();
 
