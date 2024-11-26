@@ -1,5 +1,6 @@
-const HOD = require('../models/HodModel');
-const MasterAdmin = require('../models/MasterAdminModel');
+const HOD = require('../MasterAdmin_models/HodModel');
+const MasterAdmin = require('../MasterAdmin_models/MasterAdminModel');
+
 
 // Function to add a new HOD
 exports.addHOD = async (req, res) => {
@@ -92,4 +93,9 @@ exports.updateHOD = async (req, res) => {
     res.status(500).json({ message: 'Failed to update HOD', error: error.message });
   }
 };
+
+
+
+
+
 

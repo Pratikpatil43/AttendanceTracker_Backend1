@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const MasterAdmin = require('../models/MasterAdminModel'); // Reference to MasterAdmin model
+const MasterAdmin = require('../MasterAdmin_models/MasterAdminModel'); // Reference to MasterAdmin model
 
 // HOD schema
 const hodSchema = new mongoose.Schema({

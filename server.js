@@ -1,8 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const hodRoutes = require('./routes/hodRoutes');
-const masterAdminRoutes = require('./routes/MasterAdminRoutes')
-const connectDB = require('./config/db')
+const hodRoutes = require('./MasterAdmin_routes/hodRoutes');
+const FacultyRoutes = require('./MasterAdmin_routes/FacultyRoutes');
+const masterAdminRoutes = require('./MasterAdmin_routes/MasterAdminRoutes')
+const connectDB = require('./MasterAdmin_config/db')
 
 const app = express();
 
@@ -14,6 +15,7 @@ connectDB();
 
 // Routes
 app.use('/api/hod', hodRoutes);
+app.use('/api/faculty', FacultyRoutes);
 app.use('/api/masterAdmin', masterAdminRoutes);
 
 // Start Server
