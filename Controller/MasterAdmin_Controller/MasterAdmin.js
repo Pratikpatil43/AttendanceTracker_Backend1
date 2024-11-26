@@ -1,9 +1,9 @@
 // controllers/masterAdminController.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const MasterAdmin = require('../MasterAdmin_models/MasterAdminModel');  // Adjust the path as necessary
-const Request = require('../MasterAdmin_models/RequestModel');
-const Faculty = require('../MasterAdmin_models/FacultyModel');
+const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');  // Adjust the path as necessary
+const Request = require('../../models/MasterAdmin_models/RequestModel');
+const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 
 // Add a new MasterAdmin
 exports.RegisterMasterAdmin = async (req, res) => {

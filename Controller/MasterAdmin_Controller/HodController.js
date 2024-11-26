@@ -1,5 +1,5 @@
-const HOD = require('../MasterAdmin_models/HodModel');
-const MasterAdmin = require('../MasterAdmin_models/MasterAdminModel');
+const HOD = require('./../../models/MasterAdmin_models/HodModel');
+const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 
 
 // Function to add a new HOD

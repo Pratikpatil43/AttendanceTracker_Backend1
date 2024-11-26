@@ -1,13 +1,13 @@
 // routes/facultyRoutes.js
 const express = require('express');
 const router = express.Router();
-const authenticateMasterAdmin = require('../masterAdmin_middlewares/authMiddleware');  // Your middleware for authentication
+const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewares/authMiddleware');  // Your middleware for authentication
 const {
   addFaculty,
   getFaculty,
   updateFaculty,
   removeFaculty,
-} = require('../MasterAdmin_Controller/FacultyController');  // Adjust the path if necessary
+} = require('../../Controller/MasterAdmin_Controller/FacultyController');  // Adjust the path if necessary
 
 // Add Faculty
 router.post('/add', authenticateMasterAdmin, addFaculty);

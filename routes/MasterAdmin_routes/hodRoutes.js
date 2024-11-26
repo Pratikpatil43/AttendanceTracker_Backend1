@@ -5,8 +5,8 @@ const {
   getHODs,
   updateHOD,
   removeHOD
-} = require('../MasterAdmin_Controller/HodController');
-const authenticateMasterAdmin = require('../masterAdmin_middlewares/authMiddleware')
+} = require('../../Controller/MasterAdmin_Controller/HodController');
+const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewares/authMiddleware')
 
 // Add HOD
 router.post('/add',authenticateMasterAdmin, addHOD);
