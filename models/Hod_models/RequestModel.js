@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
-  hodUsername: { type: String, required: true }, // HOD username
-  facultyUsername: { type: String, required: true }, // Faculty username
-  action: { type: String, required: true, enum: ['add', 'update', 'delete'] }, // Requested action
-  status: { type: String, required: true, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, // Request status
-  masterAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // Reference to MasterAdmin
-  approvedAt: { type: Date }, // Time of approval
-  rejectedAt: { type: Date }, // Time of rejection
+  username: { type: String, required: true, ref: 'HOD' },
+  Facultyusername: { type: String, required: true },
+  action: { type: String, enum: ['add', 'update', 'delete'], required: true },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  masterAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true },
+  requestedAt: { type: Date, default: Date.now },
+  approvedAt: { type: Date },
+  rejectedAt: { type: Date },
 });
 
-const Request = mongoose.model('Request', requestSchema);
-module.exports = Request;
+module.exports = mongoose.models.Request || mongoose.model('Request', requestSchema);

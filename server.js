@@ -14,10 +14,15 @@ app.use(express.json());
 // Database Connection
 connectDB();
 
-// Routes
-app.use('/api/hod', hodRoutes,HodLogin);
+// Routes for Master Admin
+app.use('/api/hod', hodRoutes);
 app.use('/api/faculty', FacultyRoutes);
 app.use('/api/masterAdmin', masterAdminRoutes);
+
+
+
+//Routes for HOD
+app.use('/api/hod', hodRoutes,HodLogin);
 
 
 

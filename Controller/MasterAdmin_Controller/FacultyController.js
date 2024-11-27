@@ -4,12 +4,12 @@ const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 // Add Faculty
 exports.addFaculty = async (req, res) => {
   try {
-    const { name, username, password, branch, subject } = req.body;
+    const { name, Facultyusername, password, branch, subject } = req.body;
 
     // Create a new Faculty document
     const newFaculty = new Faculty({
       name,
-      username,
+      Facultyusername,
       password, // The password will be hashed automatically in the pre-save hook
       branch,
       subject,

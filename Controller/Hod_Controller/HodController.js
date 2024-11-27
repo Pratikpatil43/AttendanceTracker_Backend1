@@ -1,69 +1,56 @@
-const Request = require('../../models/Hod_models/RequestModel'); // Request model
-const Faculty = require('../../models/MasterAdmin_models/FacultyModel'); // Faculty model
+const Request = require('../../models/MasterAdmin_models/RequestModel');
+const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 const jwt = require('jsonwebtoken');
-const HOD = require('../../models/MasterAdmin_models/HodModel');  // Replace with the correct path to your HOD model
-const axios = require('axios');
+const HOD = require('../../models/MasterAdmin_models/HodModel');
 
 
-// HOD creates a request for CRUD action (add/update/delete) on a faculty
-exports.createRequest = async (req, res) => {
-  const { username, action } = req.body;
-
+const createRequest = async (req, res) => {
+  const { username, action } = req.body; // Faculty's username and action type
   try {
-    // Check if faculty exists
-    const faculty = await Faculty.findOne({ username });
-    if (!faculty && action !== 'add') {
-      return res.status(404).json({ message: 'Faculty not found for this action.' });
+    // Validate HOD's identity
+    const hod = await HOD.findOne({ username: req.user.username });
+    if (!hod) return res.status(404).json({ message: 'HOD not found.' });
+
+    // Check for faculty existence if not adding
+    let faculty;
+    if (action !== 'add') {
+      faculty = await Faculty.findOne({ Facultyusername: username });  // Use Facultyusername to find the faculty
+      if (!faculty) return res.status(404).json({ message: 'Faculty not found.' });
     }
 
-    // Fetch the HOD's information
-    const hod = await HOD.findOne({ username: req.user.username });  // Assuming req.user is populated after authentication
-    if (!hod) {
-      return res.status(404).json({ message: 'HOD not found.' });
-    }
-
-    // Create a new request for MasterAdmin
+    // Create a new request
     const newRequest = new Request({
-      hodUsername: req.user.username,  // HOD username from authenticated token
-      facultyUsername: username,      // Faculty username
+      hodUsername: req.user.username,  // Set HOD's username from the authenticated user
+      facultyUsername: username,      // Set faculty's username from the request body
       action,
-      status: 'pending',              // Initial status is 'pending'
-      masterAdminId: hod.masterAdminId, // Correctly assign masterAdminId from HOD model
+      status: 'pending',
+      masterAdminId: hod.masterAdmin, // Assuming HOD has a masterAdmin field
     });
 
+    // Save the request
     await newRequest.save();
-    res.status(200).json({ message: 'Request sent to MasterAdmin', request: newRequest });
+    res.status(201).json({ message: 'Request sent to MasterAdmin.', request: newRequest });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating request', error });
+    res.status(500).json({ message: 'Error creating request.', error });
   }
+};
 
-}
 
 // Get all requests made by the HOD
-exports.getAllRequests = async (req, res) => {
+const getAllRequests = async (req, res) => {
   try {
     const requests = await Request.find({ hodUsername: req.user.username });
     res.status(200).json(requests);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching requests', error });
+    res.status(500).json({ message: 'Error fetching requests.', error });
   }
 };
 
+module.exports = {getAllRequests,createRequest}
 
 
 
-exports.getAllFaculties = async (req, res) => {
-  try {
-    // Replace :masterAdminId with the actual ID you want to send in the request
-    const masterAdminId = req.params.masterAdminId; // Get the ID from the request parameters
-    
-    const response = await axios.get(`http://localhost:5000/api/hod/getHOD/${masterAdminId}`);
-    
-    res.status(200).json(response.data);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching faculties', error: error.message });
-  }
-};
+
 
 
 

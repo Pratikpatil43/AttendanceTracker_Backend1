@@ -4,17 +4,20 @@ const jwt = require('jsonwebtoken');
 const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');  // Adjust the path as necessary
 const Request = require('../../models/MasterAdmin_models/RequestModel');
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
+const loggedInHod = require('../../models/MasterAdmin_models/HodModel')
 
+// Add a new MasterAdmin
 // Add a new MasterAdmin
 exports.RegisterMasterAdmin = async (req, res) => {
   try {
-    const { name, username, password } = req.body;
+    const { name, username, password, role = 'masterAdmin' } = req.body; // Default role is 'masterAdmin'
 
     // Create a new MasterAdmin document
     const newMasterAdmin = new MasterAdmin({
       name,
       username,
-      password, // Will be hashed automatically in the pre-save hook
+      password, // Password will be hashed automatically in the pre-save hook
+      role,     // Assign role to the new admin
     });
 
     // Save the new MasterAdmin to the database
@@ -29,6 +32,7 @@ exports.RegisterMasterAdmin = async (req, res) => {
 
 
 
+// Login MasterAdmin
 // Login MasterAdmin
 exports.LoginMasterAdmin = async (req, res) => {
   try {
@@ -46,11 +50,15 @@ exports.LoginMasterAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT token with role
     const token = jwt.sign(
-      { id: masterAdmin._id, username: masterAdmin.username },
+      {
+        _id: masterAdmin._id,       // Use masterAdmin object here
+        username: masterAdmin.username,  // Use masterAdmin object here
+        role: masterAdmin.role,          // Include role in the token
+      },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' } // Token expiration time
+      { expiresIn: '1h' }  // Adjust expiration as needed
     );
 
     res.status(200).json({ message: 'Login successful', token });
@@ -63,52 +71,50 @@ exports.LoginMasterAdmin = async (req, res) => {
 
 
 
-
-// MasterAdminController.js
-// MasterAdmin approves or rejects the request
+// Approve or Reject Request
+// Approve or Reject Request
 exports.approveOrRejectRequest = async (req, res) => {
-  const { requestId, status } = req.body; // status will be 'approved' or 'rejected'
+  const { username,requestId, action } = req.body;  // action: 'approve' or 'reject'
+  
 
   try {
+    // Query the `loggedInHod` model to find the HOD by username
+    const loggedInHodUser = await loggedInHod.findOne({ username });
+
+    if (!loggedInHodUser) {
+      return res.status(403).json({ message: 'HOD username not found.' });
+    }
+
     // Find the request by ID
     const request = await Request.findById(requestId);
     if (!request) {
-      return res.status(404).json({ message: 'Request not found' });
+      return res.status(404).json({ message: 'Request not found.' });
     }
 
-    // Ensure the MasterAdmin is the one approving/rejecting
-    if (request.masterAdminId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Unauthorized to perform this action' });
+    // Ensure the request is still in the 'pending' state
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request has already been processed.' });
     }
 
-    // Update the status of the request
-    request.status = status;
-    if (status === 'approved') {
-      request.approvedAt = Date.now();
-    } else if (status === 'rejected') {
-      request.rejectedAt = Date.now();
+    // Process the request approval or rejection
+    if (action === 'approve') {
+      request.status = 'approved';
+    } else if (action === 'reject') {
+      request.status = 'rejected';
+    } else {
+      return res.status(400).json({ message: 'Invalid action.' });
     }
 
-    await request.save();
+    // Save the updated request
+    const updatedRequest = await request.save();
 
-    // If approved, allow HOD to perform CRUD action on the faculty
-    if (status === 'approved') {
-      const faculty = await Faculty.findOne({ username: request.facultyUsername });
-      if (!faculty) {
-        return res.status(404).json({ message: 'Faculty not found' });
-      }
-
-      if (request.action === 'add') {
-        // HOD can add the faculty - logic to add a faculty
-      } else if (request.action === 'update') {
-        // HOD can update faculty - logic to update a faculty
-      } else if (request.action === 'delete') {
-        // HOD can delete faculty - logic to delete a faculty
-      }
-    }
-
-    res.status(200).json({ message: 'Request processed successfully' });
+    // Return the updated request
+    res.status(200).json({
+      message: `Request ${action}d successfully.`,
+      request: updatedRequest,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error processing request', error });
+    console.error(error);
+    res.status(500).json({ message: 'Error processing the request.', error });
   }
 };

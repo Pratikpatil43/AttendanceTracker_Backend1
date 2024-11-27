@@ -1,28 +1,37 @@
 const jwt = require('jsonwebtoken');
 
-// Basic middleware to authenticate using JWT
-const authenticateMasterAdmin = (req, res, next) => {
-    // Extract the token from the 'Authorization' header
-    const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+// Middleware to authenticate and check the role and username
+const authenticateMasterAdmin = async (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', ''); // Extract token from the header
 
-    // If no token is provided, respond with an error
-    if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
+  if (!token) {
+    return res.status(401).json({ message: 'Authorization token is required.' });
+  }
+
+  try {
+    const secretKey = process.env.JWT_SECRET || 'your-secret-key';  // Ensure the secret key is correct
+
+    // Verify the token
+    const decoded = jwt.verify(token, secretKey);
+
+    // Add decoded info (including role and username) to the request object
+    req.user = decoded;
+
+    // Ensure the logged-in user is a MasterAdmin
+    if (decoded.role !== 'masterAdmin') {
+      return res.status(403).json({ message: 'Access denied. You do not have the required role.' });
     }
 
-    try {
-        // Verify the token with the secret key
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Attach decoded data to the request object for use in routes
-        req.user = decoded; // Assuming the decoded token contains user info
-
-        // Continue to the next middleware or route handler
-        next();
-    } catch (error) {
-        // If the token is invalid, respond with an error
-        return res.status(401).json({ message: "Invalid token" });
+    // Ensure the username in the token matches the request's masterAdmin username
+    if (!req.user.username) {
+      return res.status(403).json({ message: 'Not authorized. You are not the MasterAdmin.' });
     }
+
+    next();  // Proceed to the next middleware or route handler
+  } catch (error) {
+    console.error('JWT verification failed:', error.message);
+    return res.status(401).json({ message: 'Invalid or expired token.' });
+  }
 };
 
 module.exports = authenticateMasterAdmin;
