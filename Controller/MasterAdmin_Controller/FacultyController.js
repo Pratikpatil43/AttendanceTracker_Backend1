@@ -1,5 +1,5 @@
 // controllers/facultyController.js
-const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
+const Faculty = require('../../models/Hod_models/FacultyModel');
 
 // Add Faculty
 exports.addFaculty = async (req, res) => {

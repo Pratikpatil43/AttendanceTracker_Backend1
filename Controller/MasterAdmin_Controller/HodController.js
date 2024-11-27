@@ -6,7 +6,7 @@ const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 // Function to add a new HOD
 exports.addHOD = async (req, res) => {
   try {
-    const { name, username, password, branch } = req.body;
+    const { name,role, username, password, branch } = req.body;
 
     // Find the MasterAdmin by some condition (e.g., username or _id)
     const masterAdmin = await MasterAdmin.findOne(); // Adjust this query to find a specific MasterAdmin if needed
@@ -29,6 +29,7 @@ exports.addHOD = async (req, res) => {
       username,
       password: hashedPassword, // Store the hashed password
       branch,
+      role,
       masterAdmin: masterAdmin._id // Associate the MasterAdmin via _id
     });
 

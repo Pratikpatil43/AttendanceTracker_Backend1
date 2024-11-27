@@ -2,9 +2,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');  // Adjust the path as necessary
-const Request = require('../../models/MasterAdmin_models/RequestModel');
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 const loggedInHod = require('../../models/MasterAdmin_models/HodModel')
+const Request = require('../../models/Hod_models/RequestModel');
+
 
 // Add a new MasterAdmin
 // Add a new MasterAdmin
@@ -73,17 +74,16 @@ exports.LoginMasterAdmin = async (req, res) => {
 
 // Approve or Reject Request
 // Approve or Reject Request
+// Approve or reject a faculty addition request
 exports.approveOrRejectRequest = async (req, res) => {
-  const { username,requestId, action } = req.body;  // action: 'approve' or 'reject'
-  
+  const { username, requestId, action } = req.body; // `action` is either 'approve' or 'reject'
 
   try {
-    // Query the `loggedInHod` model to find the HOD by username
-    const loggedInHodUser = await loggedInHod.findOne({ username });
-
-    if (!loggedInHodUser) {
-      return res.status(403).json({ message: 'HOD username not found.' });
-    }
+    // Verify MasterAdmin's identity (ensure the username belongs to a valid MasterAdmin)
+    // const masterAdmin = await MasterAdmin.findOne({ username });
+    // if (!masterAdmin) {
+    //   return res.status(403).json({ message: 'MasterAdmin not found or unauthorized.' });
+    // }
 
     // Find the request by ID
     const request = await Request.findById(requestId);
@@ -91,30 +91,57 @@ exports.approveOrRejectRequest = async (req, res) => {
       return res.status(404).json({ message: 'Request not found.' });
     }
 
-    // Ensure the request is still in the 'pending' state
+    // Ensure the request is still in 'pending' state
     if (request.status !== 'pending') {
       return res.status(400).json({ message: 'Request has already been processed.' });
     }
 
-    // Process the request approval or rejection
+    // Process the request based on the action
     if (action === 'approve') {
       request.status = 'approved';
+      request.approvedAt = new Date();
+
+      // Extract faculty details from the request's data field
+      const { name, facultyUsername, password, branch, subject } = request.data;
+
+      // Check if all required fields are present in the request data
+      if (!name || !facultyUsername || !password || !branch || !subject) {
+        return res.status(400).json({ message: 'Incomplete faculty details in the request data.' });
+      }
+
+      // Check if the faculty already exists
+      const existingFaculty = await Request.findOne({ username: facultyUsername });
+      if (existingFaculty) {
+        return res.status(400).json({ message: 'Faculty with this username already exists.' });
+      }
+
+      // Create and save the new faculty in the Faculty collection
+      const newFaculty = new Faculty({
+        name,
+        username: facultyUsername,
+        password, // Hash the password before saving
+        branch,
+        subject,
+      });
+
+      await newFaculty.save(); // Save the new faculty to the database
     } else if (action === 'reject') {
       request.status = 'rejected';
+      request.rejectedAt = new Date();
     } else {
-      return res.status(400).json({ message: 'Invalid action.' });
+      return res.status(400).json({ message: 'Invalid action. Must be either "approve" or "reject".' });
     }
 
     // Save the updated request
     const updatedRequest = await request.save();
 
-    // Return the updated request
+    // Return success response
     res.status(200).json({
       message: `Request ${action}d successfully.`,
       request: updatedRequest,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error processing the request.', error });
+    console.error('Error processing the request:', error);
+    res.status(500).json({ message: 'Failed to process the request.', error: error.message });
   }
 };

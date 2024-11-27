@@ -14,3 +14,13 @@ exports.authenticateHod = (req, res, next) => {
       return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
+
+
+exports.roleCheckMiddleware = (requiredRole='hod') => {
+  return (req, res, next) => {
+    if (!req.user || req.user.role !== hod.requiredRole) {
+      return res.status(403).json({ message: "Access denied. You do not have the required role." });
+    }
+    next();
+  };
+};

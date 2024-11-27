@@ -18,7 +18,7 @@ const authenticateMasterAdmin = async (req, res, next) => {
     req.user = decoded;
 
     // Ensure the logged-in user is a MasterAdmin
-    if (decoded.role !== 'masterAdmin') {
+    if (decoded.role !== 'masterAdmin' && decoded.role !== 'hod') {
       return res.status(403).json({ message: 'Access denied. You do not have the required role.' });
     }
 

@@ -4,6 +4,7 @@ const MasterAdmin = require('../MasterAdmin_models/MasterAdminModel'); // Refere
 // HOD schema
 const hodSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  role: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   branch: { type: String, required: true },

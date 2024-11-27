@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const HOD = require('../../models/MasterAdmin_models/HodModel');  // Replace with the correct path to your HOD model
 
 exports.HodLogin = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password,role } = req.body;
 
   try {
     // Find HOD by username
@@ -16,7 +16,7 @@ exports.HodLogin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { _id: hod._id, username: hod.username, role: hod.role },
+      { _id: hod._id, username: hod.username, role: 'hod' },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
