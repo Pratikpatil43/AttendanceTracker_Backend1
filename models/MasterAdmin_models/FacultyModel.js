@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 // Define the schema
 const facultySchema = new Schema({
   name: String,
-  facultyUsername: String,
+  facultyUsername: { type: String, required: true, unique: true },
   password: String,  // Password will be hashed later, if necessary
   branch: String,
   subject: String,

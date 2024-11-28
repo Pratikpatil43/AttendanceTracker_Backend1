@@ -5,6 +5,8 @@ const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 const loggedInHod = require('../../models/MasterAdmin_models/HodModel')
 const Request = require('../../models/Hod_models/RequestModel');
+const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateRequest');
+
 
 
 // Add a new MasterAdmin
@@ -72,76 +74,178 @@ exports.LoginMasterAdmin = async (req, res) => {
 
 
 
-// Approve or Reject Request
-// Approve or Reject Request
-// Approve or reject a faculty addition request
+
+
+// MasterAdmin approves or rejects a request
 exports.approveOrRejectRequest = async (req, res) => {
-  const { username, requestId, action } = req.body; // `action` is either 'approve' or 'reject'
+  const { requestId, action } = req.body; // `action` should be 'approve' or 'reject'
 
   try {
-    // Verify MasterAdmin's identity (ensure the username belongs to a valid MasterAdmin)
-    // const masterAdmin = await MasterAdmin.findOne({ username });
-    // if (!masterAdmin) {
-    //   return res.status(403).json({ message: 'MasterAdmin not found or unauthorized.' });
-    // }
-
     // Find the request by ID
     const request = await Request.findById(requestId);
     if (!request) {
       return res.status(404).json({ message: 'Request not found.' });
     }
 
-    // Ensure the request is still in 'pending' state
+    // Ensure the request has not already been processed
     if (request.status !== 'pending') {
       return res.status(400).json({ message: 'Request has already been processed.' });
     }
 
-    // Process the request based on the action
     if (action === 'approve') {
       request.status = 'approved';
       request.approvedAt = new Date();
 
-      // Extract faculty details from the request's data field
-      const { name, facultyUsername, password, branch, subject } = request.data;
+      // Extract data from the request for adding a new faculty
+      const { name, facultyUsername, password, branch, subject } = request;
 
-      // Check if all required fields are present in the request data
-      if (!name || !facultyUsername || !password || !branch || !subject) {
-        return res.status(400).json({ message: 'Incomplete faculty details in the request data.' });
-      }
-
-      // Check if the faculty already exists
-      const existingFaculty = await Request.findOne({ username: facultyUsername });
+      // Check if a faculty member with the same username already exists
+      const existingFaculty = await Faculty.findOne({ facultyUsername });
       if (existingFaculty) {
-        return res.status(400).json({ message: 'Faculty with this username already exists.' });
+        return res.status(400).json({
+          message: 'A faculty member with this username already exists.',
+        });
       }
 
-      // Create and save the new faculty in the Faculty collection
+      // Add the new faculty
       const newFaculty = new Faculty({
         name,
-        username: facultyUsername,
-        password, // Hash the password before saving
+        facultyUsername,
+        password, // Make sure to hash the password in production
         branch,
         subject,
       });
 
-      await newFaculty.save(); // Save the new faculty to the database
+      await newFaculty.save();
     } else if (action === 'reject') {
       request.status = 'rejected';
       request.rejectedAt = new Date();
     } else {
-      return res.status(400).json({ message: 'Invalid action. Must be either "approve" or "reject".' });
+      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
     }
 
-    // Save the updated request
+    // Save the updated request status
     const updatedRequest = await request.save();
 
-    // Return success response
     res.status(200).json({
       message: `Request ${action}d successfully.`,
       request: updatedRequest,
     });
   } catch (error) {
-    console.error('Error processing the request:', error);
-    res.status(500).json({ message: 'Failed to process the request.', error: error.message });
+    console.error('Error processing request:', error);
+    res.status(500).json({ message: 'Failed to process request.', error: error.message });
+  }
+};
+
+
+
+exports.updateFacultyRequest = async (req, res) => {
+  try {
+    const { requestId, action } = req.body;
+
+    // Find the update request
+    const request = await FacultyUpdateRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found.' });
+    }
+
+    if (action === 'approve') {
+      // Find the faculty to update by facultyUsername
+      const faculty = await Faculty.findOne({ facultyUsername: request.facultyUsername });
+      if (!faculty) {
+        return res.status(404).json({ message: 'Faculty not found.' });
+      }
+
+      // Update the faculty document with the new data from the request
+      const updatedFaculty = await Faculty.findOneAndUpdate(
+        { facultyUsername: request.facultyUsername }, // Find faculty by facultyUsername
+        {
+          name: request.data.name,          // Updated name
+          password: request.data.password,  // Ensure password is hashed before saving in production
+          branch: request.data.branch,      // Updated branch
+          subject: request.data.subject,    // Updated subject
+        },
+        { new: true } // Return the updated document
+      );
+
+      if (!updatedFaculty) {
+        return res.status(500).json({ message: 'Failed to update faculty data.' });
+      }
+
+      // Update the request status to approved
+      request.status = 'approved';
+      request.approvedAt = new Date();
+
+    } else if (action === 'reject') {
+      // Update the request status to rejected
+      request.status = 'rejected';
+      request.rejectedAt = new Date();
+
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
+    }
+
+    // Save the updated request
+    const updatedRequest = await request.save();
+
+    res.status(200).json({
+      message: `Request ${action}d successfully.`,
+      request: updatedRequest,
+    });
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).json({ message: 'Failed to process request.', error: error.message });
+  }
+};
+
+
+
+
+
+
+
+// 2. Handle Request Approval and Remove Faculty
+exports.approveRemovalRequest = async (req, res) => {
+  try {
+    const { requestId, action } = req.body;  // Receive requestId and action (approve or reject)
+
+    // Find the update request
+    const request = await FacultyUpdateRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found.' });
+    }
+
+    if (action === 'approve') {
+      // Remove the faculty record if approved
+      const facultyToDelete = await Faculty.findOneAndDelete({ facultyUsername: request.facultyUsername });
+      if (!facultyToDelete) {
+        return res.status(404).json({ message: 'Faculty not found to delete.' });
+      }
+
+      // Update the request status to approved
+      request.status = 'approved';
+      request.approvedAt = new Date();
+      await request.save();
+
+      res.status(200).json({
+        message: 'Faculty removed successfully.',
+        request: request,
+      });
+    } else if (action === 'reject') {
+      // Reject the request
+      request.status = 'rejected';
+      request.rejectedAt = new Date();
+      await request.save();
+
+      res.status(200).json({
+        message: 'Removal request rejected.',
+        request: request,
+      });
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
+    }
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).json({ message: 'Failed to process request.', error: error.message });
   }
 };

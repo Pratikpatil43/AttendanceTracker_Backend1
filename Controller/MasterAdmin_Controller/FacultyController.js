@@ -6,6 +6,13 @@ exports.addFaculty = async (req, res) => {
   try {
     const { name, Facultyusername, password, branch, subject } = req.body;
 
+    const existingFaculty = await Faculty.findOne({ facultyUsername });
+    if (existingFaculty) {
+      return res.status(400).json({
+        message: 'A faculty member with this username already exists.',
+      });
+    }
+
     // Create a new Faculty document
     const newFaculty = new Faculty({
       name,

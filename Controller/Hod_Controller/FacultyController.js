@@ -88,84 +88,82 @@ exports.getFacultyHod = async (req, res) => {
 
 
 
-// Update Faculty
-// Update Faculty (Send Request for Approval)
-// Update Faculty Request
-// Update Faculty Request
+
+// HOD creates a request to update faculty
 exports.updateFacultyHod = async (req, res) => {
   try {
-    const { id } = req.params; // Faculty ID to update
-    const { name, password, branch, subject,action } = req.body;
+    const { id } = req.params; // Faculty ID
+    const { name,facultyUsername, password, branch, subject, action } = req.body;
 
-    // Find the existing faculty by ID
-    const faculty = await AddedFaculty.findById(id);
+    // Find the faculty by ID
+    const faculty = await FacultyUpdateRequest.findById(id);
     if (!faculty) {
-      return res.status(404).json({ message: 'Faculty not found' });
+      return res.status(404).json({ message: 'Faculty not found.' });
     }
 
+    // Get the logged-in HOD
     const hod = await HOD.findOne({ username: req.user.username });
+    if (!hod) {
+      return res.status(404).json({ message: 'HOD not found.' });
+    }
 
-
-    // Create the update request for the faculty
-    const newRequest = new FacultyUpdateRequest({
-      hodUsername: req.user.username, // HOD's username (from the logged-in HOD)
-      password: password || faculty.password, // New password (if provided)
-      branch: branch || faculty.branch, // New branch (if provided)
-      action: action || faculty.action,
-      subject: subject || faculty.subject, // New subject (if provided)
+    // Create an update request
+    const updateRequest = new FacultyUpdateRequest({
+      hodUsername: req.user.username,
+      facultyUsername,
+      requestId: id,
       data: {
-        name: name || faculty.name, // New name (if provided)
-        password: password || faculty.password, // Password (if provided)
-        branch: branch || faculty.branch, // Branch (if provided)
-        action: action || faculty.action,
-        subject: subject || faculty.subject, // Subject (if provided)
+        name: name || faculty.name,
+        facultyUsername: facultyUsername || faculty.facultyUsername,
+        password: password || faculty.password,
+        branch: branch || faculty.branch,
+        subject: subject || faculty.subject,
       },
-      masterAdminId: hod.masterAdmin, // Master Admin ID (from the logged-in user)
+      action: action || 'update',
+      masterAdminId: hod.masterAdmin,
     });
 
-    // Save the request to the database
-    await newRequest.save();
+    // Save the request
+    await updateRequest.save();
 
-    // Return success response
     res.status(201).json({
-      message: 'Update request created successfully. Waiting for approval.',
-      request: newRequest,
+      message: 'Update request created successfully. Waiting for MasterAdmin approval.',
+      request: updateRequest,
     });
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to create update request for faculty',
-      error: error.message,
-    });
+    console.error('Error creating update request:', error);
+    res.status(500).json({ message: 'Failed to create update request.', error: error.message });
   }
 };
 
 
 
-
-
-// Remove Faculty (After request approval)
-// Remove Faculty (Send Request for Approval)
-// Remove Faculty Request
 exports.removeFacultyHod = async (req, res) => {
   try {
-    const { id } = req.params; // Faculty ID to remove
+    const { id } = req.params; // Getting the faculty's MongoDB ObjectId from URL params
+    
+    // Ensure the id is provided
+    if (!id) {
+      return res.status(400).json({ message: 'Faculty ID is required.' });
+    }
 
-    // Check if the faculty exists
-    const faculty = await AddedFaculty.findById(id);
+    // Check if the faculty exists by id (query by _id)
+    const faculty = await Faculty.findById(id);  // Querying by faculty _id
     if (!faculty) {
       return res.status(404).json({ message: 'Faculty not found' });
     }
 
+    // Get the HOD's details (assuming req.user contains the HOD's info)
     const hod = await HOD.findOne({ username: req.user.username });
 
-
     // Create the removal request for the faculty
-    const newRequest = new Faculty({
+    const newRequest = new FacultyUpdateRequest({
+      facultyUsername: faculty.facultyUsername,  // Add the faculty's username to the request
       hodUsername: req.user.username,  // HOD's username
       password: faculty.password,  // Existing faculty password
       branch: faculty.branch,  // Existing faculty branch
       subject: faculty.subject,  // Existing faculty subject
-      type: 'remove',  // Remove type
+      type: 'remove',  // Removal type
       action: 'remove',  // Action to be taken
       data: {
         name: faculty.name,  // Name of the faculty
@@ -176,6 +174,7 @@ exports.removeFacultyHod = async (req, res) => {
       masterAdminId: hod.masterAdmin,  // Assuming MasterAdmin ID is stored in req.user
     });
 
+    // Save the removal request
     await newRequest.save();
 
     res.status(201).json({
@@ -183,6 +182,7 @@ exports.removeFacultyHod = async (req, res) => {
       request: newRequest,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to create removal request for faculty', error: error.message });
   }
 };

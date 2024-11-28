@@ -16,7 +16,7 @@ connectDB();
 
 // Routes for Master Admin
 app.use('/api/hod', masterAdminhodRoutes);
-app.use('/api/faculty', FacultyRoutes);
+app.use('/api/masterAdmin/faculty', FacultyRoutes);
 app.use('/api/masterAdmin', masterAdminRoutes);
 
 

@@ -13,7 +13,8 @@ const {
   removeFacultyHod,
 } = require('../../Controller/Hod_Controller/FacultyController');  // Adjust the path if necessary
 
-
+//login for hod
+router.post('/login', HodLogin);  
 
 // Add Faculty
 router.post('/addfaculty', authenticateHod, addFacultyHod);
@@ -35,7 +36,7 @@ router.post('/createRequest',authenticateHod,  createRequest);
 // View all requests made by the HOD
 router.get('/requests', authenticateHod, getAllRequests);
 
-router.post('/login', HodLogin);                                        
+                                      
 
        
 
