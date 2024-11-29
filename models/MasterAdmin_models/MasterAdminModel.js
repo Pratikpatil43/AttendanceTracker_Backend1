@@ -3,10 +3,11 @@ const bcrypt = require('bcryptjs');
 
 const masterAdminSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  role: { type: String, default: 'hod' },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, required: true, default: 'masterAdmin' },  // Added field for role
-  createdAt: { type: Date, default: Date.now }, // Added field for created timestamp
+  branch: { type: String, required: true },
+  masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // Reference to MasterAdmin
 });
 
 // Hash password before saving

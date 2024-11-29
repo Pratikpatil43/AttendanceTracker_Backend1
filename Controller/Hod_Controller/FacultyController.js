@@ -67,7 +67,7 @@ exports.getFacultyHod = async (req, res) => {
     const facultyMembers = await Faculty.find();
 
     // If no faculty members are found
-    if (facultyMembers.length === 0) {
+    if (!facultyMembers || facultyMembers.length === 0) {
       return res.status(404).json({ message: 'No faculty members found' });
     }
 
@@ -75,13 +75,14 @@ exports.getFacultyHod = async (req, res) => {
     res.status(200).json({
       facultyMembers: facultyMembers.map(faculty => ({
         id: faculty._id,  // MongoDB unique ID
-        name: faculty.name,
-        username: faculty.username,
+        name: faculty.name, // Correct access to `name`
+        username: faculty.facultyUsername, // Adjust if the field is named differently
         branch: faculty.branch,
         subject: faculty.subject,
       }))
     });
   } catch (error) {
+    console.error('Error fetching faculty members:', error);
     res.status(500).json({ message: 'Failed to retrieve faculty members', error: error.message });
   }
 };
@@ -93,10 +94,10 @@ exports.getFacultyHod = async (req, res) => {
 exports.updateFacultyHod = async (req, res) => {
   try {
     const { id } = req.params; // Faculty ID
-    const { name,facultyUsername, password, branch, subject, action } = req.body;
+    const { name, facultyUsername, password, branch, subject, action } = req.body;
 
-    // Find the faculty by ID
-    const faculty = await FacultyUpdateRequest.findById(id);
+    // Find the faculty by ID in the Faculty schema (before creating a request)
+    const faculty = await Faculty.findById(id);  // Fetch faculty from Faculty schema
     if (!faculty) {
       return res.status(404).json({ message: 'Faculty not found.' });
     }
@@ -107,13 +108,13 @@ exports.updateFacultyHod = async (req, res) => {
       return res.status(404).json({ message: 'HOD not found.' });
     }
 
-    // Create an update request
+    // Create an update request with the data fetched from Faculty schema and the new data provided
     const updateRequest = new FacultyUpdateRequest({
       hodUsername: req.user.username,
       facultyUsername,
       requestId: id,
       data: {
-        name: name || faculty.name,
+        name: name || faculty.name, // If name is not provided, use existing faculty's name
         facultyUsername: facultyUsername || faculty.facultyUsername,
         password: password || faculty.password,
         branch: branch || faculty.branch,
@@ -135,6 +136,7 @@ exports.updateFacultyHod = async (req, res) => {
     res.status(500).json({ message: 'Failed to create update request.', error: error.message });
   }
 };
+
 
 
 

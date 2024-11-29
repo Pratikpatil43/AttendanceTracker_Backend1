@@ -1,106 +1,120 @@
-// controllers/facultyController.js
-const Faculty = require('../../models/Hod_models/FacultyModel');
+const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 
-// Add Faculty
+// Create Faculty (Add)
 exports.addFaculty = async (req, res) => {
   try {
-    const { name, Facultyusername, password, branch, subject } = req.body;
+    const { name, facultyUsername, password, branch, subject } = req.body;
 
-    const existingFaculty = await Faculty.findOne({ facultyUsername });
-    if (existingFaculty) {
-      return res.status(400).json({
-        message: 'A faculty member with this username already exists.',
-      });
+    // Ensure required fields are present
+    if (!name || !facultyUsername || !password || !branch || !subject) {
+      return res.status(400).json({ message: 'Missing required fields in the request body' });
     }
 
-    // Create a new Faculty document
+    // Check if the faculty already exists (make sure to await the result)
+    const existingFaculty = await Faculty.findOne({ facultyUsername: facultyUsername });
+
+    if (existingFaculty) {
+      // If faculty exists, send a response and stop further execution
+      return res.status(400).json({ message: 'Faculty already exists' });
+    }
+
+    // Create a new faculty object
     const newFaculty = new Faculty({
       name,
-      Facultyusername,
-      password, // The password will be hashed automatically in the pre-save hook
+      facultyUsername,
+      password,
       branch,
       subject,
     });
 
-    // Save the new Faculty to the database
+    // Save the new faculty to the database
     await newFaculty.save();
 
-    res.status(201).json({ message: 'Faculty added successfully', faculty: newFaculty });
+    // Send success response
+    return res.status(201).json({
+      message: 'Faculty added successfully.',
+      faculty: newFaculty,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to add Faculty', error: error.message });
+    console.error('Error adding faculty:', error);
+    // Ensure error response is only sent once
+    return res.status(500).json({ message: 'Failed to add faculty', error: error.message });
   }
 };
 
-// Get Faculty by username
+
+
+
+// Get All Faculty
 exports.getFaculty = async (req, res) => {
   try {
     // Fetch all faculty members from the database
     const facultyMembers = await Faculty.find();
 
-    // If no faculty members are found
-    if (facultyMembers.length === 0) {
+    if (!facultyMembers || facultyMembers.length === 0) {
       return res.status(404).json({ message: 'No faculty members found' });
     }
 
-    // Return all faculty members with their MongoDB unique _id and relevant info
     res.status(200).json({
       facultyMembers: facultyMembers.map(faculty => ({
-        id: faculty._id,  // MongoDB unique ID
+        id: faculty._id,
         name: faculty.name,
-        username: faculty.username,
+        username: faculty.facultyUsername,
         branch: faculty.branch,
         subject: faculty.subject,
       }))
     });
   } catch (error) {
+    console.error('Error fetching faculty members:', error);
     res.status(500).json({ message: 'Failed to retrieve faculty members', error: error.message });
   }
 };
 
-// Update Faculty
+// Update Faculty (Update)
 exports.updateFaculty = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, username, password, branch, subject } = req.body;
+    const { id } = req.params; // Faculty ID
+    const { name, facultyUsername, password, branch, subject } = req.body;
 
-    const faculty = await Faculty.findById(id);
+    // Find the faculty by ID and update the fields
+    const updatedFaculty = await Faculty.findByIdAndUpdate(
+      id,
+      { name, facultyUsername, password, branch, subject },
+      { new: true } // Return the updated document
+    );
 
-    if (!faculty) {
-      return res.status(404).json({ message: 'Faculty not found' });
+    if (!updatedFaculty) {
+      return res.status(404).json({ message: 'Faculty not found.' });
     }
 
-    // Update Faculty fields
-    faculty.name = name || faculty.name;
-    faculty.username = username || faculty.username;
-    faculty.password = password || faculty.password;
-    faculty.branch = branch || faculty.branch;
-    faculty.subject = subject || faculty.subject;
-
-    // Save the updated faculty document
-    await faculty.save();
-
-    res.status(200).json({ message: 'Faculty updated successfully', faculty });
+    res.status(200).json({
+      message: 'Faculty updated successfully.',
+      faculty: updatedFaculty,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update Faculty', error: error.message });
+    console.error('Error updating faculty:', error);
+    res.status(500).json({ message: 'Failed to update faculty', error: error.message });
   }
 };
 
-// Remove Faculty
+// Delete Faculty (Remove)
 exports.removeFaculty = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // Faculty ID
 
-    const faculty = await Faculty.findById(id);
+    // Find the faculty by ID and delete
+    const deletedFaculty = await Faculty.findByIdAndDelete(id);
 
-    if (!faculty) {
-      return res.status(404).json({ message: 'Faculty not found' });
+    if (!deletedFaculty) {
+      return res.status(404).json({ message: 'Faculty not found.' });
     }
 
-    // Remove Faculty from the database
-    await Faculty.findByIdAndDelete(id);
-
-    res.status(200).json({ message: 'Faculty removed successfully' });
+    res.status(200).json({
+      message: 'Faculty removed successfully.',
+      faculty: deletedFaculty,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to remove Faculty', error: error.message });
+    console.error('Error removing faculty:', error);
+    res.status(500).json({ message: 'Failed to remove faculty', error: error.message });
   }
 };

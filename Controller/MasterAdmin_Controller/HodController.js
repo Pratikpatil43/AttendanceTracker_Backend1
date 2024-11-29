@@ -47,10 +47,15 @@ exports.addHOD = async (req, res) => {
 // Function to get all HODs for a specific MasterAdmin
 exports.getHODs = async (req, res) => {
   try {
-    const masterAdminId = req.params.masterAdminId; // Correctly extract masterAdminId from params
+    const masterAdminId = req.params.masterAdminId;
+
+    // Validate MasterAdmin ID
+    if (!masterAdminId) {
+      return res.status(400).json({ message: 'Master Admin ID is required' });
+    }
 
     // Find the MasterAdmin by ID
-    const masterAdmin = await MasterAdmin.findById(masterAdminId); // Use masterAdminId here
+    const masterAdmin = await MasterAdmin.findById(masterAdminId);
     if (!masterAdmin) {
       return res.status(404).json({ message: 'Master Admin not found' });
     }
@@ -58,11 +63,20 @@ exports.getHODs = async (req, res) => {
     // Get all HODs associated with this MasterAdmin
     const hods = await HOD.find({ masterAdmin: masterAdminId });
 
-    res.status(200).json({ hods });
+    // Check if no HODs are found
+    if (hods.length === 0) {
+      return res.status(404).json({ message: 'No HODs have been added yet' });
+    }
+
+    // Return the list of HODs
+    return res.status(200).json({ hods });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to retrieve HODs', error: error.message });
+    console.error('Error retrieving HODs:', error);
+    return res.status(500).json({ message: 'Failed to retrieve HODs', error: error.message });
   }
 };
+
+
 
 // Function to remove an HOD by ID
 exports.removeHOD = async (req, res) => {

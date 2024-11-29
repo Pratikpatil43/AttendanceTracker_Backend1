@@ -15,22 +15,34 @@ exports.RegisterMasterAdmin = async (req, res) => {
   try {
     const { name, username, password, role = 'masterAdmin' } = req.body; // Default role is 'masterAdmin'
 
+    // Check if the username already exists
+    const existingMasterAdmin = await MasterAdmin.findOne({ username }); // Ensure you await the findOne query
+    if (existingMasterAdmin) {
+      return res.status(400).json({ message: 'Master Admin already exists' });
+    }
+
     // Create a new MasterAdmin document
     const newMasterAdmin = new MasterAdmin({
       name,
       username,
-      password, // Password will be hashed automatically in the pre-save hook
-      role,     // Assign role to the new admin
+      password, // Assuming password hashing is handled in a pre-save hook or middleware
+      role,
     });
 
     // Save the new MasterAdmin to the database
     await newMasterAdmin.save();
 
-    res.status(201).json({ message: 'Master Admin added successfully', masterAdmin: newMasterAdmin });
+    return res
+      .status(201)
+      .json({ message: 'Master Admin added successfully', masterAdmin: newMasterAdmin });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to add Master Admin', error: error.message });
+    console.error('Error adding Master Admin:', error); // Log error for debugging
+    return res
+      .status(500)
+      .json({ message: 'Failed to add Master Admin', error: error.message });
   }
 };
+
 
 
 
@@ -96,8 +108,8 @@ exports.approveOrRejectRequest = async (req, res) => {
       request.status = 'approved';
       request.approvedAt = new Date();
 
-      // Extract data from the request for adding a new faculty
-      const { name, facultyUsername, password, branch, subject } = request;
+      // Extract data from the request
+      const { name, facultyUsername, password, branch, subject } = request.data; // Access `data`
 
       // Check if a faculty member with the same username already exists
       const existingFaculty = await Faculty.findOne({ facultyUsername });
@@ -111,7 +123,7 @@ exports.approveOrRejectRequest = async (req, res) => {
       const newFaculty = new Faculty({
         name,
         facultyUsername,
-        password, // Make sure to hash the password in production
+        password, // TODO: Hash the password before saving in production
         branch,
         subject,
       });
@@ -139,6 +151,8 @@ exports.approveOrRejectRequest = async (req, res) => {
 
 
 
+
+
 exports.updateFacultyRequest = async (req, res) => {
   try {
     const { requestId, action } = req.body;
@@ -149,6 +163,8 @@ exports.updateFacultyRequest = async (req, res) => {
       return res.status(404).json({ message: 'Request not found.' });
     }
 
+    console.log('Request Details:', request);  // Debugging log
+
     if (action === 'approve') {
       // Find the faculty to update by facultyUsername
       const faculty = await Faculty.findOne({ facultyUsername: request.facultyUsername });
@@ -156,12 +172,19 @@ exports.updateFacultyRequest = async (req, res) => {
         return res.status(404).json({ message: 'Faculty not found.' });
       }
 
+
+      // Hash password if provided
+      if (request.data.password) {
+        const hashedPassword = await bcrypt.hash(request.data.password, 10);
+        request.data.password = hashedPassword;
+      }
+
       // Update the faculty document with the new data from the request
       const updatedFaculty = await Faculty.findOneAndUpdate(
         { facultyUsername: request.facultyUsername }, // Find faculty by facultyUsername
         {
           name: request.data.name,          // Updated name
-          password: request.data.password,  // Ensure password is hashed before saving in production
+          password: request.data.password,  // Updated password (hashed)
           branch: request.data.branch,      // Updated branch
           subject: request.data.subject,    // Updated subject
         },
@@ -187,6 +210,9 @@ exports.updateFacultyRequest = async (req, res) => {
 
     // Save the updated request
     const updatedRequest = await request.save();
+    if (!updatedRequest) {
+      return res.status(500).json({ message: 'Failed to save the request update.' });
+    }
 
     res.status(200).json({
       message: `Request ${action}d successfully.`,
