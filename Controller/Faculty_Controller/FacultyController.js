@@ -1,72 +1,64 @@
-const Student = require('../../models/Faculty_models/FacultyaddStudent'); // Import the Student model
+const Student = require('../../models/Faculty_models/FacultyaddStudent');
+const FacultySelection = require('../../models/Faculty_models/facultySelection');
 
-const FacultySelection = require('../../models/Faculty_models/facultySelection'); // path to your model
-
+// Set Faculty Selection
 exports.setFacultySelection = async (req, res) => {
-    const { branch, subject, className, date } = req.body;
+    const { branch, className, subject, date } = req.body;
 
-    // Validate input
-    if (!branch || !subject || !className || !date) {
-        return res.status(400).json({ message: 'All fields are required' });
+    // Log the request body for debugging
+    console.log(req.body);
+
+    if (!branch || !className || !subject || !Array.isArray(subject) || !date) {
+        return res.status(400).json({ message: 'Branch, class, subjects, and date are required.' });
     }
 
     try {
-        // Create new selection document
         const selection = new FacultySelection({
             branch,
-            subject,
             className,
+            subject, // Save multiple subjects
             date
         });
 
-        // Save the selection to MongoDB
         await selection.save();
-
         res.status(200).json({
             message: 'Selection set successfully',
-            selection: selection,
+            selection
         });
     } catch (error) {
-        console.error('Error saving faculty selection:', error);
-        res.status(500).json({ message: 'Error saving faculty selection' });
+        console.error('Error saving selection:', error);
+        res.status(500).json({ message: 'Error saving selection' });
     }
 };
 
 
 
+
+// Fetch Faculty Selection
 exports.getFacultySelection = async (req, res) => {
     try {
-        // Fetch the faculty selection document from MongoDB (most recent entry)
-        const selection = await FacultySelection.findOne({}).sort({ createdAt: -1 }); // Sort by creation time, get the latest selection
+        const selection = await FacultySelection.findOne({}).sort({ createdAt: -1 });
 
         if (!selection) {
-            return res.status(404).json({ message: 'No selection found. Please select again.' });
+            return res.status(404).json({ message: 'No selection found. Please set a new selection.' });
         }
 
-        // Check if the selection has expired based on your logic
-        const expiryTime = 3600 * 1000; // 1 hour in milliseconds
+        const expiryTime = 30 * 60 * 1000; // 30 minutes in milliseconds
         const currentTime = new Date().getTime();
 
         if (currentTime - new Date(selection.createdAt).getTime() > expiryTime) {
-            // Selection has expired
-            await FacultySelection.deleteOne({ _id: selection._id }); // Optionally remove expired selection
-            return res.status(400).json({ message: 'Faculty selection has expired. Please select again.' });
+            await FacultySelection.deleteOne({ _id: selection._id });
+            return res.status(400).json({ message: 'Selection has expired. Please set a new selection.' });
         }
 
-        // Return the selection if valid
         res.status(200).json({ selection });
     } catch (error) {
         console.error('Error fetching faculty selection:', error);
-        res.status(500).json({ message: 'Error fetching faculty selection' });
+        res.status(500).json({ message: 'Error fetching faculty selection.' });
     }
 };
 
-
-
-
-// Route to add students
-
-
+// Add Students
 exports.addStudent = async (req, res) => {
     const { studentName, studentUSN, isLateralEntry } = req.body;
 
@@ -79,30 +71,42 @@ exports.addStudent = async (req, res) => {
         // Fetch the latest faculty selection
         const facultySelection = await FacultySelection.findOne({}).sort({ createdAt: -1 });
 
-        // Ensure selection exists
         if (!facultySelection) {
             return res.status(400).json({ message: 'Faculty selection not found. Please set the selection first.' });
         }
 
         const { branch, className, subject } = facultySelection;
 
-        // Check for duplicate studentUSN
-        const existingStudent = await Student.findOne({ studentUSN });
-        if (existingStudent) {
-            return res.status(400).json({ message: 'Student with this USN already exists.' });
+        // Ensure subjects exist in the selection
+        if (!subject || subject.length === 0) {
+            return res.status(400).json({ message: 'No subjects found in the faculty selection.' });
         }
 
-        // Create new student
+        // Check for existing student
+        const existingStudent = await Student.findOne({ studentUSN });
+
+        if (existingStudent) {
+            // If student exists, append new subjects, avoiding duplicates
+            const updatedSubjects = [...new Set([...existingStudent.subject, ...subject])];
+            existingStudent.subject = updatedSubjects;
+            await existingStudent.save();
+
+            return res.status(200).json({
+                message: 'Student updated with new subjects successfully',
+                student: existingStudent,
+            });
+        }
+
+        // Create a new student document
         const newStudent = new Student({
             studentName,
             studentUSN,
             isLateralEntry,
-            branch,     // Add branch
-            className,  // Add className
-            subject,    // Add subject
+            branch,
+            className,
+            subject,
         });
 
-        // Save to database
         await newStudent.save();
 
         res.status(201).json({ message: 'Student added successfully', student: newStudent });
@@ -111,6 +115,7 @@ exports.addStudent = async (req, res) => {
         res.status(500).json({ message: 'Error adding student', error });
     }
 };
+
 
 
 
@@ -138,6 +143,7 @@ exports.getStudentsBySelection = async (req, res) => {
         res.status(500).json({ message: 'Error fetching students', error });
     }
 };
+
 
 
 

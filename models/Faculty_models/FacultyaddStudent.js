@@ -22,10 +22,7 @@ const StudentSchema = new mongoose.Schema({
         type: String, // Add className field
         required: true
     },
-    subject: {
-        type: String, // Add subject field
-        required: true
-    },
+    subject: { type: [String], required: true }, // Array of subjects
 }, { timestamps: true });
 
 module.exports = mongoose.model('Student', StudentSchema);
