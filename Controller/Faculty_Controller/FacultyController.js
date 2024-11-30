@@ -66,46 +66,25 @@ exports.getFacultySelection = async (req, res) => {
 
 // Route to add students
 
+
 exports.addStudent = async (req, res) => {
-    const { studentUSN, isLateralEntry, studentName } = req.body;
-
-    // Ensure isLateralEntry field is present
-    if (isLateralEntry === undefined) {
-        return res.status(400).json({ message: 'isLateralEntry field is required.' });
-    }
-
-    if (typeof isLateralEntry !== 'boolean') {
-        return res.status(400).json({ message: 'isLateralEntry field must be a boolean value.' });
-    }
+    const { studentName, studentUSN, isLateralEntry } = req.body;
 
     // Validate required fields
-    if (!studentName) {
-        return res.status(400).json({ message: 'Student name is required.' });
-    }
-
-    // Validate studentUSN based on isLateralEntry
-    if (isLateralEntry) {
-        // Validate for lateral entry: Only accept 2- or 3-digit numbers
-        const lateralEntryPattern = /^[0-9]{2,3}$/;
-        if (!studentUSN || !lateralEntryPattern.test(studentUSN)) {
-            return res.status(400).json({ message: 'For lateral entry students, studentUSN must be a 2- or 3-digit number.' });
-        }
-    } else {
-        // Validate for regular students: Ensure proper USN format
-        const regularUSNPattern = /^[1-9][A-Z]{2}\d{2}[A-Z]{2}\d{3}$/;
-        if (!studentUSN || !regularUSNPattern.test(studentUSN)) {
-            return res.status(400).json({ message: 'For regular students, studentUSN must be a valid USN format (e.g., 1CS19CS123).' });
-        }
+    if (!studentName || !studentUSN || isLateralEntry === undefined) {
+        return res.status(400).json({ message: 'All fields are required.' });
     }
 
     try {
-        // Fetch the latest faculty selection from MongoDB
+        // Fetch the latest faculty selection
         const facultySelection = await FacultySelection.findOne({}).sort({ createdAt: -1 });
 
-        // Check if the faculty selection is valid
-        if (!facultySelection || !facultySelection.className || !facultySelection.branch || !facultySelection.subject || !facultySelection.date) {
-            return res.status(400).json({ message: 'Faculty selection is not set properly.' });
+        // Ensure selection exists
+        if (!facultySelection) {
+            return res.status(400).json({ message: 'Faculty selection not found. Please set the selection first.' });
         }
+
+        const { branch, className, subject } = facultySelection;
 
         // Check for duplicate studentUSN
         const existingStudent = await Student.findOne({ studentUSN });
@@ -113,26 +92,108 @@ exports.addStudent = async (req, res) => {
             return res.status(400).json({ message: 'Student with this USN already exists.' });
         }
 
-        // Prepare student data object
-        const studentData = {
+        // Create new student
+        const newStudent = new Student({
             studentName,
-            studentUSN, // Store the validated studentUSN
-            className: facultySelection.className,
-            branch: facultySelection.branch,
-            subject: facultySelection.subject,
-            date: facultySelection.date,
-            isLateralEntry, // Save the lateral entry status as a boolean
-        };
+            studentUSN,
+            isLateralEntry,
+            branch,     // Add branch
+            className,  // Add className
+            subject,    // Add subject
+        });
 
-        // Create the student document in the database
-        const newStudent = await Student.create(studentData);
+        // Save to database
+        await newStudent.save();
 
-        // Respond with success
         res.status(201).json({ message: 'Student added successfully', student: newStudent });
     } catch (error) {
         console.error('Error adding student:', error);
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Error adding student', error });
     }
 };
 
 
+
+
+//getStudents for attendance
+exports.getStudentsBySelection = async (req, res) => {
+    const { branch, className, subject } = req.body;
+
+    if (!branch || !className || !subject) {
+        return res.status(400).json({ message: 'Branch, class, and subject are required.' });
+    }
+
+    try {
+        // Fetch only studentUSN and studentName
+        const students = await Student.find({ branch, className, subject })
+            .select('studentUSN studentName'); // Select only the necessary fields
+
+        if (students.length === 0) {
+            return res.status(404).json({ message: 'No students found for the given selection.' });
+        }
+
+        res.status(200).json({ message: 'Students fetched successfully', students });
+    } catch (error) {
+        console.error('Error fetching students:', error);
+        res.status(500).json({ message: 'Error fetching students', error });
+    }
+};
+
+
+
+// Update Student Details Using studentUSN
+exports.updateStudent = async (req, res) => {
+    const { studentUSN, studentName, isLateralEntry } = req.body;
+
+    // Validate required fields
+    if (!studentUSN || !studentName || isLateralEntry === undefined) {
+        return res.status(400).json({ message: 'All fields are required.' });
+    }
+
+    try {
+        // Find the student by studentUSN
+        const student = await Student.findOne({ studentUSN });
+
+        // Check if student exists
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found.' });
+        }
+
+        // Update student details
+        student.studentName = studentName;
+        student.isLateralEntry = isLateralEntry;
+
+        // Save updated student
+        await student.save();
+
+        res.status(200).json({ message: 'Student updated successfully', student });
+    } catch (error) {
+        console.error('Error updating student:', error);
+        res.status(500).json({ message: 'Error updating student', error });
+    }
+};
+
+// Delete Student Using studentUSN
+exports.deleteStudent = async (req, res) => {
+    const { studentUSN } = req.body;
+
+    // Validate required field
+    if (!studentUSN) {
+        return res.status(400).json({ message: 'Student USN is required.' });
+    }
+
+    try {
+        // Find and delete the student by studentUSN
+        const student = await Student.findOneAndDelete({ studentUSN });
+
+        // Check if student exists
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found.' });
+        }
+
+        res.status(200).json({ message: 'Student deleted successfully', student });
+    } catch (error) {
+        console.error('Error deleting student:', error);
+        res.status(500).json({ message: 'Error deleting student', error });
+    }
+};

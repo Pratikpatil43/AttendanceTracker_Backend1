@@ -1,37 +1,31 @@
 const mongoose = require('mongoose');
 
-const studentSchema = new mongoose.Schema({
-    studentName: { 
-        type: String, 
-        required: true 
-    },
-    studentUSN: { 
+const StudentSchema = new mongoose.Schema({
+    studentName: {
         type: String,
-        unique: true,
-        required: function () {
-            return !this.isLateralEntry; // Required only if not lateral entry
-        },
-        validate: {
-            validator: function (value) {
-                if (this.isLateralEntry) {
-                    // Allow studentUSN for lateral entry to be a 2- or 3-digit number
-                    return /^[0-9]{2,3}$/.test(value || "");
-                }
-                // Regular students must follow the proper USN format
-                return /^[1-9][A-Z]{2}\d{2}[A-Z]{2}\d{3}$/.test(value);
-            },
-            message: function (props) {
-                if (this.isLateralEntry) {
-                    return 'For lateral entry students, studentUSN must be a 2- or 3-digit number.';
-                }
-                return 'For regular students, studentUSN must follow the USN format (e.g., 1CS19CS123).';
-            }
-        }
+        required: true
     },
-    isLateralEntry: { 
-        type: Boolean, 
-        required: true 
-    }
-});
+    studentUSN: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    isLateralEntry: {
+        type: Boolean,
+        required: true
+    },
+    branch: {
+        type: String, // Add branch field
+        required: true
+    },
+    className: {
+        type: String, // Add className field
+        required: true
+    },
+    subject: {
+        type: String, // Add subject field
+        required: true
+    },
+}, { timestamps: true });
 
-module.exports = mongoose.model('Student', studentSchema);
+module.exports = mongoose.model('Student', StudentSchema);
