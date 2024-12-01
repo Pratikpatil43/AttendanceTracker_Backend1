@@ -24,6 +24,13 @@ exports.addFacultyHod = async (req, res) => {
       return res.status(404).json({ message: 'HOD not found' });
     }
 
+    const existingusername = await Request.findOne({facultyUsername})
+    if(existingusername){
+      return res.status(404).json({ message: 'faculty Username already exists' });
+
+
+    }
+
     // Create a new request object for adding a faculty
     const newRequest = new Request({
       hodUsername: req.user.username, // Logged-in HOD's username
@@ -138,42 +145,46 @@ exports.updateFacultyHod = async (req, res) => {
 };
 
 
-
-
 exports.removeFacultyHod = async (req, res) => {
   try {
     const { id } = req.params; // Getting the faculty's MongoDB ObjectId from URL params
-    
-    // Ensure the id is provided
+
+    // Ensure the ID is provided
     if (!id) {
       return res.status(400).json({ message: 'Faculty ID is required.' });
     }
 
-    // Check if the faculty exists by id (query by _id)
-    const faculty = await Faculty.findById(id);  // Querying by faculty _id
+    // Check if the faculty exists by ID
+    const faculty = await Faculty.findById(id); // Querying by faculty _id
     if (!faculty) {
-      return res.status(404).json({ message: 'Faculty not found' });
+      return res.status(404).json({ message: 'Faculty not found.' });
     }
 
-    // Get the HOD's details (assuming req.user contains the HOD's info)
+    // Ensure HOD details are available
     const hod = await HOD.findOne({ username: req.user.username });
+    if (!hod) {
+      return res.status(404).json({ message: 'HOD not found.' });
+    }
 
-    // Create the removal request for the faculty
+    // Remove any existing request for this faculty
+    await FacultyUpdateRequest.deleteOne({ facultyUsername: faculty.facultyUsername });
+
+    // Create a new removal request for the faculty
     const newRequest = new FacultyUpdateRequest({
-      facultyUsername: faculty.facultyUsername,  // Add the faculty's username to the request
-      hodUsername: req.user.username,  // HOD's username
-      password: faculty.password,  // Existing faculty password
-      branch: faculty.branch,  // Existing faculty branch
-      subject: faculty.subject,  // Existing faculty subject
-      type: 'remove',  // Removal type
-      action: 'remove',  // Action to be taken
+      facultyUsername: faculty.facultyUsername, // Add the faculty's username to the request
+      hodUsername: req.user.username, // HOD's username
+      password: faculty.password, // Existing faculty password
+      branch: faculty.branch, // Existing faculty branch
+      subject: faculty.subject, // Existing faculty subject
+      type: 'remove', // Removal type
+      action: 'remove', // Action to be taken
       data: {
-        name: faculty.name,  // Name of the faculty
-        password: faculty.password,  // Password (can be kept for reference)
-        branch: faculty.branch,  // Branch
-        subject: faculty.subject,  // Subject
+        name: faculty.name, // Name of the faculty
+        password: faculty.password, // Password (can be kept for reference)
+        branch: faculty.branch, // Branch
+        subject: faculty.subject, // Subject
       },
-      masterAdminId: hod.masterAdmin,  // Assuming MasterAdmin ID is stored in req.user
+      masterAdminId: hod.masterAdmin, // Assuming MasterAdmin ID is stored in req.user
     });
 
     // Save the removal request
@@ -185,6 +196,8 @@ exports.removeFacultyHod = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create removal request for faculty', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Failed to create removal request for faculty.', error: error.message });
   }
 };

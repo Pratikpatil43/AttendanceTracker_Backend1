@@ -11,7 +11,7 @@ router.post('/markAttendance',authenticateFaculty, attendanceController.markAtte
 // Get attendance for students
 router.get('/getAttendance',authenticateFaculty, attendanceController.getAttendance);
 
-// Update student attendance
+// Update student attendance  
 router.put('/updateAttendance',authenticateFaculty, attendanceController.updateAttendance);
 
 module.exports = router;

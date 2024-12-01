@@ -129,7 +129,7 @@ exports.getStudentsBySelection = async (req, res) => {
     }
 
     try {
-        // Fetch only studentUSN and studentName
+        // Fetch only studentUSN and studentName based on the selection
         const students = await Student.find({ branch, className, subject })
             .select('studentUSN studentName'); // Select only the necessary fields
 
@@ -137,13 +137,26 @@ exports.getStudentsBySelection = async (req, res) => {
             return res.status(404).json({ message: 'No students found for the given selection.' });
         }
 
-        res.status(200).json({ message: 'Students fetched successfully', students });
+        // Function to extract last 2 or 3 digits from studentUSN for sorting
+        const getLastDigits = (usn) => {
+            const lastDigits = usn.slice(-3); // Extract the last 3 digits by default
+            return parseInt(lastDigits, 10); // Convert to integer for numerical sorting
+        };
+
+        // Sort the students based on the last digits of studentUSN
+        const sortedStudents = students.sort((a, b) => {
+            const lastDigitsA = getLastDigits(a.studentUSN); // Extract last 3 digits
+            const lastDigitsB = getLastDigits(b.studentUSN); // Extract last 3 digits
+            return lastDigitsA - lastDigitsB; // Numerical sort in ascending order
+        });
+
+        // Return the sorted student records
+        res.status(200).json({ students: sortedStudents });
     } catch (error) {
         console.error('Error fetching students:', error);
         res.status(500).json({ message: 'Error fetching students', error });
     }
 };
-
 
 
 

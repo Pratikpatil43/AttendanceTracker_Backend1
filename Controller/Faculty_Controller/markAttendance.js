@@ -10,49 +10,64 @@ exports.markAttendance = async (req, res) => {
     }
 
     try {
-        // Fetch students based on branch, class, and subject, including isLateralEntry field
+        // Fetch students based on branch, class, and if the student is enrolled in the provided subject
         const students = await Student.find({ branch, className, subject }).select('studentUSN studentName isLateralEntry');
 
         if (students.length === 0) {
             return res.status(404).json({ message: 'No students found for the given selection.' });
         }
 
-        // Iterate over students and attendance data and save it
-        for (let i = 0; i < students.length; i++) {
-            const { studentUSN, studentName, isLateralEntry } = students[i];
-            const status = attendanceData[studentUSN]; // This will hold the status for each student
-            
-            console.log(`Checking attendance for student: ${studentName} (USN: ${studentUSN})`);
-            console.log(`Status: ${status}`); // Log the status being used
-            
-            // If the status is not valid, return an error
-            if (!status || !['present', 'absent'].includes(status)) {
-                return res.status(400).json({ message: `Invalid status for student ${studentName} (USN: ${studentUSN})` });
+        // Create attendance records for each student
+        const attendanceRecords = [];
+
+        // Handle students from the attendanceData
+        for (let usn in attendanceData) {
+            const status = attendanceData[usn];
+
+            // Check if the student exists in the fetched list or handle manual entry like "121"
+            const student = students.find(student => student.studentUSN === usn);
+
+            if (!student && (usn.length === 3 || usn.length === 2)) {
+                // If the student has a 2 or 3 digit USN, assume it's a valid entry
+                attendanceRecords.push({
+                    studentUSN: usn,
+                    studentName: "Unknown",  // You can set it to a default name or leave it as "Unknown"
+                    isLateralEntry: false,   // Adjust according to your logic
+                    subject,
+                    branch,
+                    className,
+                    attendanceDate,
+                    status,
+                });
+            } else if (student) {
+                const { studentUSN, studentName, isLateralEntry } = student;
+
+                if (!status || !['present', 'absent'].includes(status)) {
+                    throw new Error(`Invalid status for student ${studentName} (USN: ${studentUSN})`);
+                }
+
+                attendanceRecords.push(new Attendance({
+                    studentUSN,
+                    studentName,
+                    isLateralEntry,
+                    subject,
+                    branch,
+                    className,
+                    attendanceDate,
+                    status,
+                }));
             }
-
-            // Create new attendance record with the isLateralEntry field
-            const newAttendance = new Attendance({
-                studentUSN,
-                studentName,
-                isLateralEntry, // Include isLateralEntry in the attendance record
-                subject,
-                branch,
-                className,
-                attendanceDate,
-                status,
-            });
-
-            // Save attendance record to the database
-            await newAttendance.save();
         }
+
+        // Bulk insert attendance records
+        await Attendance.insertMany(attendanceRecords);
 
         res.status(200).json({ message: 'Attendance marked successfully' });
     } catch (error) {
         console.error('Error marking attendance:', error);
-        res.status(500).json({ message: 'Error marking attendance', error });
+        res.status(500).json({ message: 'Error marking attendance', error: error.message });
     }
 };
-
 
 
 
@@ -131,4 +146,3 @@ exports.updateAttendance = async (req, res) => {
         res.status(500).json({ message: 'Error updating attendance', error });
     }
 };
-

@@ -13,7 +13,7 @@ const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateReque
 // Add a new MasterAdmin
 exports.RegisterMasterAdmin = async (req, res) => {
   try {
-    const { name, username, password, role = 'masterAdmin' } = req.body; // Default role is 'masterAdmin'
+    const { name, username, password, role = 'masterAdmin', masterAdmin } = req.body; // Default role is 'masterAdmin'
 
     // Check if the username already exists
     const existingMasterAdmin = await MasterAdmin.findOne({ username }); // Ensure you await the findOne query
@@ -25,8 +25,9 @@ exports.RegisterMasterAdmin = async (req, res) => {
     const newMasterAdmin = new MasterAdmin({
       name,
       username,
-      password, // Assuming password hashing is handled in a pre-save hook or middleware
+      password,
       role,
+      masterAdmin, // Pass the field here
     });
 
     // Save the new MasterAdmin to the database
@@ -34,7 +35,7 @@ exports.RegisterMasterAdmin = async (req, res) => {
 
     return res
       .status(201)
-      .json({ message: 'Master Admin added successfully', masterAdmin: newMasterAdmin });
+      .json({ message: 'MasterAdmin Registered added successfully', masterAdmin: newMasterAdmin });
   } catch (error) {
     console.error('Error adding Master Admin:', error); // Log error for debugging
     return res

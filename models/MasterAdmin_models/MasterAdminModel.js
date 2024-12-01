@@ -6,9 +6,9 @@ const masterAdminSchema = new mongoose.Schema({
   role: { type: String, default: 'hod' },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  branch: { type: String, required: true },
-  masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // Reference to MasterAdmin
+  branch: { type: String },
 });
+
 
 // Hash password before saving
 masterAdminSchema.pre('save', async function (next) {

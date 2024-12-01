@@ -35,7 +35,7 @@ app.use('/api/masterAdmin', masterAdminRoutes);
 
 // Routes for HOD
 app.use('/api/hod', hodRoutes);
-
+                                                                                                               
 // Routes for Faculty
 app.use('/api/faculty', FacultyRoutes);
 
