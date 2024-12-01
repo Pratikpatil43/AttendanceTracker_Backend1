@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   addHOD,
+  getMasterAdminDetails,
   getHODs,
   updateHOD,
   removeHOD
@@ -11,8 +12,11 @@ const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewar
 // Add HOD
 router.post('/add',authenticateMasterAdmin, addHOD);
 
-// Get all HODs
+// Get all HODs    
 router.get('/getHOD/:masterAdminId',authenticateMasterAdmin, getHODs);
+
+router.get('/getAllhod',authenticateMasterAdmin, getMasterAdminDetails);
+
 
 // Update HOD
 router.put('/update/:id',authenticateMasterAdmin, updateHOD);

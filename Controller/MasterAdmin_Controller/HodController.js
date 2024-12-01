@@ -78,6 +78,25 @@ exports.getHODs = async (req, res) => {
 
 
 
+exports.getMasterAdminDetails = async (req, res) => {
+  try {
+    const { userId } = req.user; // Assuming user info is extracted from token
+    const masterAdmin = await MasterAdmin.findOne({ userId });
+
+    if (!masterAdmin) {
+      return res.status(404).json({ message: "Master Admin not found." });
+    }
+
+    return res.status(200).json({ masterAdminId: masterAdmin._id });
+  } catch (error) {
+    console.error("Error fetching Master Admin details:", error);
+    return res.status(500).json({ message: "Failed to fetch details." });
+  }
+};
+
+
+
+
 // Function to remove an HOD by ID
 exports.removeHOD = async (req, res) => {
   try {

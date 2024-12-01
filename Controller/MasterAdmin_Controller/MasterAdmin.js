@@ -74,10 +74,10 @@ exports.LoginMasterAdmin = async (req, res) => {
         role: masterAdmin.role,          // Include role in the token
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }  // Adjust expiration as needed
+      { expiresIn: '4h' }  // Adjust expiration as needed
     );
 
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ message: 'Login successfull', token });
   } catch (error) {
     res.status(500).json({ message: 'Failed to login', error: error.message });
   }

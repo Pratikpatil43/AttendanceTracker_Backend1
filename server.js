@@ -9,11 +9,17 @@ const masterAdminRoutes = require('./routes/MasterAdmin_routes/MasterAdminRoutes
 const studentRoute = require('./routes/Student_routes/student_route')
 const connectDB = require('./config/db');
 const session = require('express-session'); // Import the session middleware
+const cors = require('cors');
+
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+
+app.use(cors({
+  origin: 'http://localhost:5173'  // Only allow requests from your frontend
+}));
 
 app.use(session({
   secret: 'hushfsdhfj65634hoiuhftwebhber454&^^#$*',  // Secret key for signing the session ID cookie
