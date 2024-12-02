@@ -1,14 +1,18 @@
-// models/MasterAdmin_models/FacultyModel.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 // Define the schema
 const facultySchema = new Schema({
-  name: String,
-  facultyUsername: { type: String, required: true },
-  password: String,  // Password will be hashed later, if necessary
-  branch: String,
-  subject: String,
+  name: { type: String, required: true },
+  facultyUsername: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  branch: { type: String, required: true },
+  subject: { type: String, required: true },
+  masterAdminId: { 
+    type: mongoose.Schema.Types.ObjectId,  // Link to MasterAdmin using ObjectId
+    ref: 'MasterAdmin',
+    required: true 
+  }
 });
 
 // Check if the model is already defined to avoid overwriting it

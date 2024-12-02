@@ -8,7 +8,11 @@ const hodSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   branch: { type: String, required: true },
-  masterAdminId: { type: String, unique:true}  // Reference to MasterAdmin
+  masterAdmin: { 
+    type: mongoose.Schema.Types.ObjectId,  // Link to MasterAdmin using ObjectId
+    ref: 'MasterAdmin',
+    required: true 
+  }
 });
 
 // Create the model

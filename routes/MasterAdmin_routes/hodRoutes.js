@@ -13,7 +13,7 @@ const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewar
 router.post('/add',authenticateMasterAdmin, addHOD);
 
 // Get all HODs    
-router.get('/getHOD/:masterAdminId',authenticateMasterAdmin, getHODs);
+router.get('/getHOD',authenticateMasterAdmin, getHODs);
 
 router.get('/getAllhod',authenticateMasterAdmin, getMasterAdminDetails);
 

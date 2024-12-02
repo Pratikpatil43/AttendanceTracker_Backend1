@@ -4,51 +4,49 @@ const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 const jwt = require('jsonwebtoken');
 
 
-// Function to add a new HOD
 exports.addHOD = async (req, res) => {
   try {
-    const { name, role, username, password, branch,masterAdminId } = req.body; 
+    const { name, role, username, password, branch } = req.body;
 
-    // Get the token from the Authorization header
-    const token = req.headers.authorization?.split(' ')[1];  // Bearer <token>
-
+    // Extract token from Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'Authorization token is required' });
     }
 
-    // Verify the token and extract masterAdminId from it
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);  // Use your JWT secret
+    // Decode and verify JWT
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const masterAdminId = decodedToken._id;
 
     if (!masterAdminId) {
       return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
     }
 
-    // Find the MasterAdmin by ID (MasterAdmin ID should be part of the decoded token)
-    const masterAdmin = await MasterAdmin.find({masterAdminId});
+    // Find MasterAdmin using _id
+    const masterAdmin = await MasterAdmin.findById(masterAdminId);
     if (!masterAdmin) {
-      return res.status(404).json({ message: 'Master Admin not found' });
+      return res.status(404).json({ message: 'MasterAdmin not found' });
     }
 
-    // Check if the username already exists for an HOD
+    // Check for existing HOD username
     const existingHOD = await HOD.findOne({ username });
     if (existingHOD) {
       return res.status(400).json({ message: 'HOD with this username already exists' });
     }
 
-    // Hash the password using bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the saltRounds
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the new HOD and associate it with the MasterAdmin via masterAdminId
+    // Create and save new HOD
     const newHOD = new HOD({
       name,
       username,
-      password: hashedPassword, // Store the hashed password
+      password: hashedPassword,
       branch,
-      role,
-      masterAdminId: masterAdminId, // Associate the MasterAdmin via _id
+      role: role || 'hod', // Default role as 'HOD' if not provided
+      masterAdmin: masterAdminId, // Link with MasterAdmin via _id
     });
 
-    // Save the new HOD to the database
     await newHOD.save();
 
     res.status(201).json({ message: 'HOD added successfully', hod: newHOD });
@@ -61,28 +59,37 @@ exports.addHOD = async (req, res) => {
 
 
 
+
 // Function to get all HODs for a specific MasterAdmin
 exports.getHODs = async (req, res) => {
   try {
-    const masterAdminId = req.params.masterAdminId;
-
-    // Validate MasterAdmin ID
-    if (!masterAdminId) {
-      return res.status(400).json({ message: 'Master Admin ID is required' });
+    // Extract token from Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required' });
     }
 
-    // Find the MasterAdmin by ID
-    // const masterAdmin = await MasterAdmin.findById(masterAdminId);
-    // if (!masterAdmin) {
-    //   return res.status(404).json({ message: 'Master Admin not found' });
-    // }
+    // Decode and verify JWT
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
 
-    // Get all HODs associated with this MasterAdmin
-    const hods = await HOD.find( {masterAdminId} );
+    const { _id: masterAdminId, role } = decodedToken;
 
-    // Check if no HODs are found
-    if (hods.length === 0) {
-      return res.status(404).json({ message: 'No HODs have been added yet' });
+    // Verify the role is `masterAdmin`
+    if (role !== 'masterAdmin') {
+      return res.status(403).json({ message: 'Not authorized. You are not the MasterAdmin.' });
+    }
+
+    // Find all HODs associated with this `MasterAdmin`'s `_id`
+    const hods = await HOD.find({ masterAdmin: masterAdminId });
+
+    // Check if HODs exist
+    if (!hods || hods.length === 0) {
+      return res.status(404).json({ message: 'No HODs found for this MasterAdmin.' });
     }
 
     // Return the list of HODs
@@ -92,6 +99,8 @@ exports.getHODs = async (req, res) => {
     return res.status(500).json({ message: 'Failed to retrieve HODs', error: error.message });
   }
 };
+
+
 
 
 

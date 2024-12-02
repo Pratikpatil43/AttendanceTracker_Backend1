@@ -3,19 +3,15 @@ const bcrypt = require('bcryptjs');
 
 // Define the MasterAdmin Schema
 const masterAdminSchema = new mongoose.Schema({
-  masterAdminId: { 
-    type: String, 
-    required: true, 
-    unique: true, 
-    default: function() { 
-      return `MA-${Math.floor(Math.random() * 1000000)}`; // Generate custom masterAdminId
-    }
-  },
   name: { type: String, required: true },
   role: { type: String, default: 'masterAdmin' },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  branch: { type: String },
+  masterAdmin: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'MasterAdmin', 
+    required: false // Set this as false to allow it to be dynamic
+  }
 });
 
 // Hash password before saving

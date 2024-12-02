@@ -1,6 +1,10 @@
+// Create Faculty (Add)
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 
-// Create Faculty (Add)
+
 exports.addFaculty = async (req, res) => {
   try {
     const { name, facultyUsername, password, branch, subject } = req.body;
@@ -10,21 +14,46 @@ exports.addFaculty = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields in the request body' });
     }
 
+    // Get the token from the Authorization header
+    const token = req.headers.authorization?.split(' ')[1];  // Bearer <token>
+
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required' });
+    }
+
+    // Verify the token and extract masterAdminId from it
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);  // Use your JWT secret
+
+    // The masterAdminId will be decoded from the token
+    const masterAdminId = decodedToken.masterAdminId;  // Extract masterAdminId from the decoded token
+
+    if (!masterAdminId) {
+      return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
+    }
+
+    // Find the MasterAdmin by ID (MasterAdmin ID should be part of the decoded token)
+    const masterAdmin = await MasterAdmin.findById(masterAdminId);
+    if (!masterAdmin) {
+      return res.status(404).json({ message: 'Master Admin not found' });
+    }
+
     // Check if the faculty already exists (make sure to await the result)
     const existingFaculty = await Faculty.findOne({ facultyUsername: facultyUsername });
-
     if (existingFaculty) {
-      // If faculty exists, send a response and stop further execution
       return res.status(400).json({ message: 'Faculty already exists' });
     }
 
-    // Create a new faculty object
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the saltRounds
+
+    // Create a new faculty object and associate it with the MasterAdmin via masterAdminId
     const newFaculty = new Faculty({
       name,
       facultyUsername,
-      password,
+      password: hashedPassword,  // Store the hashed password
       branch,
       subject,
+      masterAdminId: masterAdminId,  // Associate the MasterAdmin via ObjectId
     });
 
     // Save the new faculty to the database
@@ -37,7 +66,6 @@ exports.addFaculty = async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding faculty:', error);
-    // Ensure error response is only sent once
     return res.status(500).json({ message: 'Failed to add faculty', error: error.message });
   }
 };
@@ -49,7 +77,7 @@ exports.addFaculty = async (req, res) => {
 exports.getFaculty = async (req, res) => {
   try {
     // Fetch all faculty members from the database
-    const facultyMembers = await Faculty.find();
+    const facultyMembers = await Faculty.findById({masterAdminId});
 
     if (!facultyMembers || facultyMembers.length === 0) {
       return res.status(404).json({ message: 'No faculty members found' });

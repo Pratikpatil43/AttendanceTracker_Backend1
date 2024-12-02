@@ -8,88 +8,104 @@ const Request = require('../../models/Hod_models/RequestModel');
 const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateRequest');
 
 
-
-// Add a new MasterAdmin
-// Add a new MasterAdmin
 // Register MasterAdmin
+
 exports.RegisterMasterAdmin = async (req, res) => {
   try {
-    const { name, username, password, role = 'masterAdmin', branch } = req.body;
+    const { name, username, password, role = 'masterAdmin' } = req.body;
 
-    // Check if the username already exists
-    const existingMasterAdmin = await MasterAdmin.findOne({ username });
-    if (existingMasterAdmin) {
-      return res.status(400).json({ message: 'Master Admin already exists' });
+    // Check if the username is already taken
+    const existingAdmin = await MasterAdmin.findOne({ username });
+    if (existingAdmin) {
+      return res.status(400).json({ message: 'MasterAdmin already exists with this username' });
     }
 
-    // Create a new MasterAdmin document with auto-generated masterAdminId
-    const newMasterAdmin = new MasterAdmin({
+    // Check if there is already a root admin (masterAdmin is not set for the first one)
+    const firstMasterAdmin = await MasterAdmin.findOne({ masterAdmin: { $exists: false } });
+
+    // If no root admin exists (first MasterAdmin), assign masterAdmin as null
+    const masterAdminReference = firstMasterAdmin ? firstMasterAdmin._id : null;
+
+    // Create a new MasterAdmin object
+    const newAdmin = new MasterAdmin({
       name,
       username,
-      password,
+      password, // This will be hashed automatically in the pre-save middleware
       role,
-      branch,
+      masterAdmin: masterAdminReference // Dynamically assign the first MasterAdmin's _id or null
     });
 
-    // Save the new MasterAdmin to the database
-    const savedMasterAdmin = await newMasterAdmin.save();
+    // Save to the database
+    await newAdmin.save();
 
-    // Return the saved MasterAdmin along with the auto-generated masterAdminId
+    // Send success response
     return res.status(201).json({
-      message: 'Master Admin registered successfully',
-      masterAdmin: savedMasterAdmin,  // This includes the masterAdminId
+      message: 'MasterAdmin registered successfully',
+      admin: {
+        _id: newAdmin._id, // Mongoose automatically generates this field
+        name: newAdmin.name,
+        username: newAdmin.username,
+        role: newAdmin.role,
+        masterAdmin: newAdmin.masterAdmin // This will return the _id of the referenced masterAdmin (or null)
+      },
     });
   } catch (error) {
-    console.error('Error adding Master Admin:', error);
-    return res.status(500).json({ message: 'Failed to add Master Admin', error: error.message });
+    console.error('Error registering MasterAdmin:', error);
+    return res.status(500).json({ message: 'Failed to register MasterAdmin', error: error.message });
   }
 };
 
 
 
 
+
+
 // Login MasterAdmin
-// Login MasterAdmin
-// Login MasterAdmin
+
 exports.LoginMasterAdmin = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Find MasterAdmin by username
-    const masterAdmin = await MasterAdmin.findOne({ username });
-    if (!masterAdmin) {
-      return res.status(404).json({ message: 'Master Admin not found' });
+    // Find the admin by username
+    const admin = await MasterAdmin.findOne({ username }); // Use the username from the request body
+    if (!admin) {
+      return res.status(404).json({ message: 'MasterAdmin not found' });
     }
 
-    // Compare the password with the hashed password in the database
-    const isMatch = await bcrypt.compare(password, masterAdmin.password);
+    // Compare the hashed password
+    const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Get masterAdminId from the document
-    const masterAdminId = masterAdmin.masterAdminId; // We now have the masterAdminId from the document
-
-    // Generate JWT token with masterAdminId and role
+    // Generate a token
     const token = jwt.sign(
       {
-        _id: masterAdmin._id,              // masterAdmin's _id (MongoDB default identifier)
-        username: masterAdmin.username,     // masterAdmin's username
-        role: masterAdmin.role,             // masterAdmin's role
-        masterAdminId: masterAdminId,       // Include custom masterAdminId from the document
+        _id: admin._id,        // Admin's _id
+        role: admin.role,      // Admin's role
+        masterAdmin: admin.masterAdmin, // Reference to the root master admin
       },
-      process.env.JWT_SECRET,              // Secret key for signing the token
-      { expiresIn: '4h' }                  // Token expiration time (4 hours)
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' } // Token expiration set to 1 day
     );
 
-    res.status(200).json({ message: 'Login successful', token });
+    // Return the response with token and admin details
+    return res.status(200).json({
+      message: 'Login successful',
+      token,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        username: admin.username,
+        role: admin.role,
+        masterAdmin: admin.masterAdmin, // The masterAdmin reference (_id of the root admin or null)
+      },
+    });
   } catch (error) {
-    console.error(error); // Log error for debugging
-    res.status(500).json({ message: 'Failed to login', error: error.message });
+    console.error('Error logging in MasterAdmin:', error);
+    return res.status(500).json({ message: 'Failed to log in', error: error.message });
   }
 };
-
-
 
 
 
