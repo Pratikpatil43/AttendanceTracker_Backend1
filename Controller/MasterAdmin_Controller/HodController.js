@@ -1,15 +1,30 @@
 const bcrypt = require('bcrypt'); // Import bcrypt for hashing passwords
 const HOD = require('./../../models/MasterAdmin_models/HodModel');
 const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
+const jwt = require('jsonwebtoken');
 
 
 // Function to add a new HOD
 exports.addHOD = async (req, res) => {
   try {
-    const { name,role, username, password, branch } = req.body;
+    const { name, role, username, password, branch,masterAdminId } = req.body; 
 
-    // Find the MasterAdmin by some condition (e.g., username or _id)
-    const masterAdmin = await MasterAdmin.findOne(); // Adjust this query to find a specific MasterAdmin if needed
+    // Get the token from the Authorization header
+    const token = req.headers.authorization?.split(' ')[1];  // Bearer <token>
+
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required' });
+    }
+
+    // Verify the token and extract masterAdminId from it
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);  // Use your JWT secret
+
+    if (!masterAdminId) {
+      return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
+    }
+
+    // Find the MasterAdmin by ID (MasterAdmin ID should be part of the decoded token)
+    const masterAdmin = await MasterAdmin.find({masterAdminId});
     if (!masterAdmin) {
       return res.status(404).json({ message: 'Master Admin not found' });
     }
@@ -21,16 +36,16 @@ exports.addHOD = async (req, res) => {
     }
 
     // Hash the password using bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the saltRounds, can be adjusted for more security
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the saltRounds
 
-    // Create the new HOD and associate with the MasterAdmin by ObjectId
+    // Create the new HOD and associate it with the MasterAdmin via masterAdminId
     const newHOD = new HOD({
       name,
       username,
       password: hashedPassword, // Store the hashed password
       branch,
       role,
-      masterAdmin: masterAdmin._id // Associate the MasterAdmin via _id
+      masterAdminId: masterAdminId, // Associate the MasterAdmin via _id
     });
 
     // Save the new HOD to the database
@@ -38,9 +53,11 @@ exports.addHOD = async (req, res) => {
 
     res.status(201).json({ message: 'HOD added successfully', hod: newHOD });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to add HOD', error: error.message });
   }
 };
+
 
 
 
@@ -55,13 +72,13 @@ exports.getHODs = async (req, res) => {
     }
 
     // Find the MasterAdmin by ID
-    const masterAdmin = await MasterAdmin.findById(masterAdminId);
-    if (!masterAdmin) {
-      return res.status(404).json({ message: 'Master Admin not found' });
-    }
+    // const masterAdmin = await MasterAdmin.findById(masterAdminId);
+    // if (!masterAdmin) {
+    //   return res.status(404).json({ message: 'Master Admin not found' });
+    // }
 
     // Get all HODs associated with this MasterAdmin
-    const hods = await HOD.find({ masterAdmin: masterAdminId });
+    const hods = await HOD.find( {masterAdminId} );
 
     // Check if no HODs are found
     if (hods.length === 0) {

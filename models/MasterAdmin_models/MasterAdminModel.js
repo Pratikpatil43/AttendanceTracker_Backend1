@@ -1,14 +1,22 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Define the MasterAdmin Schema
 const masterAdminSchema = new mongoose.Schema({
+  masterAdminId: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    default: function() { 
+      return `MA-${Math.floor(Math.random() * 1000000)}`; // Generate custom masterAdminId
+    }
+  },
   name: { type: String, required: true },
-  role: { type: String, default: 'hod' },
+  role: { type: String, default: 'masterAdmin' },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   branch: { type: String },
 });
-
 
 // Hash password before saving
 masterAdminSchema.pre('save', async function (next) {
@@ -22,5 +30,7 @@ masterAdminSchema.pre('save', async function (next) {
   }
 });
 
+// Create a model using the schema
 const MasterAdmin = mongoose.model('MasterAdmin', masterAdminSchema);
+
 module.exports = MasterAdmin;

@@ -11,43 +11,44 @@ const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateReque
 
 // Add a new MasterAdmin
 // Add a new MasterAdmin
+// Register MasterAdmin
 exports.RegisterMasterAdmin = async (req, res) => {
   try {
-    const { name, username, password, role = 'masterAdmin', masterAdmin } = req.body; // Default role is 'masterAdmin'
+    const { name, username, password, role = 'masterAdmin', branch } = req.body;
 
     // Check if the username already exists
-    const existingMasterAdmin = await MasterAdmin.findOne({ username }); // Ensure you await the findOne query
+    const existingMasterAdmin = await MasterAdmin.findOne({ username });
     if (existingMasterAdmin) {
       return res.status(400).json({ message: 'Master Admin already exists' });
     }
 
-    // Create a new MasterAdmin document
+    // Create a new MasterAdmin document with auto-generated masterAdminId
     const newMasterAdmin = new MasterAdmin({
       name,
       username,
       password,
       role,
-      masterAdmin, // Pass the field here
+      branch,
     });
 
     // Save the new MasterAdmin to the database
-    await newMasterAdmin.save();
+    const savedMasterAdmin = await newMasterAdmin.save();
 
-    return res
-      .status(201)
-      .json({ message: 'MasterAdmin Registered added successfully', masterAdmin: newMasterAdmin });
+    // Return the saved MasterAdmin along with the auto-generated masterAdminId
+    return res.status(201).json({
+      message: 'Master Admin registered successfully',
+      masterAdmin: savedMasterAdmin,  // This includes the masterAdminId
+    });
   } catch (error) {
-    console.error('Error adding Master Admin:', error); // Log error for debugging
-    return res
-      .status(500)
-      .json({ message: 'Failed to add Master Admin', error: error.message });
+    console.error('Error adding Master Admin:', error);
+    return res.status(500).json({ message: 'Failed to add Master Admin', error: error.message });
   }
 };
 
 
 
 
-
+// Login MasterAdmin
 // Login MasterAdmin
 // Login MasterAdmin
 exports.LoginMasterAdmin = async (req, res) => {
@@ -66,23 +67,27 @@ exports.LoginMasterAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token with role
+    // Get masterAdminId from the document
+    const masterAdminId = masterAdmin.masterAdminId; // We now have the masterAdminId from the document
+
+    // Generate JWT token with masterAdminId and role
     const token = jwt.sign(
       {
-        _id: masterAdmin._id,       // Use masterAdmin object here
-        username: masterAdmin.username,  // Use masterAdmin object here
-        role: masterAdmin.role,          // Include role in the token
+        _id: masterAdmin._id,              // masterAdmin's _id (MongoDB default identifier)
+        username: masterAdmin.username,     // masterAdmin's username
+        role: masterAdmin.role,             // masterAdmin's role
+        masterAdminId: masterAdminId,       // Include custom masterAdminId from the document
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '4h' }  // Adjust expiration as needed
+      process.env.JWT_SECRET,              // Secret key for signing the token
+      { expiresIn: '4h' }                  // Token expiration time (4 hours)
     );
 
-    res.status(200).json({ message: 'Login successfull', token });
+    res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
+    console.error(error); // Log error for debugging
     res.status(500).json({ message: 'Failed to login', error: error.message });
   }
 };
-
 
 
 
