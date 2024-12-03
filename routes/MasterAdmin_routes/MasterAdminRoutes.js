@@ -1,6 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { RegisterMasterAdmin, LoginMasterAdmin,approveOrRejectRequest,updateFacultyRequest,approveRemovalRequest,getRequests } = require('../../Controller/MasterAdmin_Controller/MasterAdmin');
+const { 
+    RegisterMasterAdmin, 
+    LoginMasterAdmin,
+    approveOrRejectRequest,
+    updateFacultyRequest,
+    approveRemovalRequest,
+    getRequests,
+    getupdateRequests,
+    handleAction 
+} = require('../../Controller/MasterAdmin_Controller/MasterAdmin');
+
 const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewares/authMiddleware')
 
 
@@ -14,6 +24,11 @@ router.post('/login', LoginMasterAdmin);
 router.post('/approveRejectRequest', authenticateMasterAdmin, approveOrRejectRequest);
 
 router.get('/getRequests', authenticateMasterAdmin, getRequests);
+
+
+
+router.get('/getupdateRequests', authenticateMasterAdmin, getupdateRequests);           
+
 
 
 router.post('/updateRequest', authenticateMasterAdmin, updateFacultyRequest);

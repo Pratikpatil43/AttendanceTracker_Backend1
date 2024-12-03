@@ -184,7 +184,7 @@ exports.removeFacultyHod = async (req, res) => {
         branch: faculty.branch, // Branch
         subject: faculty.subject, // Subject
       },
-      masterAdminId: hod.masterAdmin, // Assuming MasterAdmin ID is stored in req.user
+      masterAdmin: hod.masterAdmin, // Assuming MasterAdmin ID is stored in req.user
     });
 
     // Save the removal request

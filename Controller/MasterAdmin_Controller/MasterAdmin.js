@@ -223,6 +223,34 @@ exports.getRequests = async (req, res) => {
 
 
 
+exports.getupdateRequests = async (req, res) => {
+  try {
+    // No need to check for RequestId or masterAdmin since we want all requests
+    const requests = await FacultyUpdateRequest.find(); // Fetch all requests without any filter
+
+    // Map through the requests and return _id as RequestId
+    const response = requests.map(request => ({
+      RequestId: request._id, // Use _id as RequestId
+      ...request.toObject(),  // Convert Mongoose document to plain JavaScript object
+    }));
+
+    // Send back the requests as a JSON response
+    res.status(200).json({
+      success: true,
+      data: response,
+    });
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
+
+
+
 
 
 
@@ -348,3 +376,5 @@ exports.approveRemovalRequest = async (req, res) => {
     res.status(500).json({ message: 'Failed to process request.', error: error.message });
   }
 };
+
+
