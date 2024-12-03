@@ -16,7 +16,7 @@ const addedFacultySchema = new mongoose.Schema({
     branch: { type: String, required: true }, // Branch of the faculty
     subject: { type: String, required: true } // Subject of the faculty
   },
-  masterAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // MasterAdmin ID
+  masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // MasterAdmin ID
 }, { timestamps: true }); // Store timestamps when the document is created or updated
 
 const AddedFaculty = mongoose.model('AddedFaculty', addedFacultySchema);

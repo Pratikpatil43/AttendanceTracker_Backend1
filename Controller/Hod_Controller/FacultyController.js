@@ -47,7 +47,7 @@ exports.addFacultyHod = async (req, res) => {
         branch, // Branch
         subject // Subject
       },
-      masterAdminId: hod.masterAdmin // MasterAdmin ID from the HOD record
+      masterAdmin: hod.masterAdmin // MasterAdmin ID from the HOD record
     });
 
     // Save the new faculty request to the database

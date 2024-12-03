@@ -17,7 +17,7 @@ const facultyUpdateRequestSchema = new Schema({
     branch: { type: String }, // New branch if provided
     subject: { type: String }, // New subject if provided
   },
-  masterAdminId: { type: Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // ID of the Master Admin who will approve/reject the request
+  masterAdmin: { type: Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // ID of the Master Admin who will approve/reject the request
 }, { timestamps: true }); // Add timestamps for creation and update time
 
 const FacultyUpdateRequest = mongoose.models.FacultyUpdateRequest || mongoose.model('FacultyUpdateRequest', facultyUpdateRequestSchema);

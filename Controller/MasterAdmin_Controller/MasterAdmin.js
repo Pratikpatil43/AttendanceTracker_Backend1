@@ -115,61 +115,112 @@ exports.approveOrRejectRequest = async (req, res) => {
   const { requestId, action } = req.body; // `action` should be 'approve' or 'reject'
 
   try {
-    // Find the request by ID
-    const request = await Request.findById(requestId);
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found.' });
-    }
-
-    // Ensure the request has not already been processed
-    if (request.status !== 'pending') {
-      return res.status(400).json({ message: 'Request has already been processed.' });
-    }
-
-    if (action === 'approve') {
-      request.status = 'approved';
-      request.approvedAt = new Date();
-
-      // Extract data from the request
-      const { name, facultyUsername, password, branch, subject } = request.data; // Access `data`
-
-      // Check if a faculty member with the same username already exists
-      const existingFaculty = await Faculty.findOne({ facultyUsername });
-      if (existingFaculty) {
-        return res.status(400).json({
-          message: 'A faculty member with this username already exists.',
-        });
+      // Extract token from Authorization header
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ message: 'Authorization token is required' });
+      }
+  
+      // Decode and verify JWT
+      let decodedToken;
+      try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        return res.status(403).json({ message: 'Invalid or expired token' });
+      }
+  
+      const { _id: masterAdminId, role } = decodedToken;
+  
+      // Verify the role is `masterAdmin`
+      if (role !== 'masterAdmin') {
+        return res.status(403).json({ message: 'Not authorized. You are not the MasterAdmin.' });
       }
 
-      // Add the new faculty
-      const newFaculty = new Faculty({
-        name,
-        facultyUsername,
-        password, // TODO: Hash the password before saving in production
-        branch,
-        subject,
+      // Find the request by ID
+      const request = await Request.findById(requestId);
+      if (!request) {
+        return res.status(404).json({ message: 'Request not found.' });
+      }
+  
+      // Ensure the request has not already been processed
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: 'Request has already been processed.' });
+      }
+
+      if (action === 'approve') {
+        request.status = 'approved';
+        request.approvedAt = new Date();
+
+        // Extract data from the request
+        const { name, facultyUsername, password, branch, subject } = request.data; // Access `data`
+
+        // Check if a faculty member with the same username already exists
+        const existingFaculty = await Faculty.findOne({ facultyUsername });
+        if (existingFaculty) {
+          return res.status(400).json({
+            message: 'A faculty member with this username already exists.',
+          });
+        }
+
+        // Add the new faculty
+        const newFaculty = new Faculty({
+          name,
+          facultyUsername,
+          password, // TODO: Hash the password before saving in production
+          branch,
+          subject,
+          masterAdmin: masterAdminId,
+        });
+
+        await newFaculty.save();
+      } else if (action === 'reject') {
+        request.status = 'rejected';
+        request.rejectedAt = new Date();
+      } else {
+        return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
+      }
+
+      // Save the updated request status
+      const updatedRequest = await request.save();
+
+      res.status(200).json({
+        message: `Request ${action}d successfully.`,
+        request: updatedRequest,
       });
-
-      await newFaculty.save();
-    } else if (action === 'reject') {
-      request.status = 'rejected';
-      request.rejectedAt = new Date();
-    } else {
-      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
-    }
-
-    // Save the updated request status
-    const updatedRequest = await request.save();
-
-    res.status(200).json({
-      message: `Request ${action}d successfully.`,
-      request: updatedRequest,
-    });
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({ message: 'Failed to process request.', error: error.message });
   }
 };
+
+
+
+
+exports.getRequests = async (req, res) => {
+  try {
+    // No need to check for RequestId or masterAdmin since we want all requests
+    const requests = await Request.find(); // Fetch all requests without any filter
+
+    // Map through the requests and return _id as RequestId
+    const response = requests.map(request => ({
+      RequestId: request._id, // Use _id as RequestId
+      ...request.toObject(),  // Convert Mongoose document to plain JavaScript object
+    }));
+
+    // Send back the requests as a JSON response
+    res.status(200).json({
+      success: true,
+      data: response,
+    });
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
 
 
 

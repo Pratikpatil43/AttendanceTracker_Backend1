@@ -1,7 +1,5 @@
-// models/AddedFaculty.js
-const mongoose = require('mongoose');
+const mongoose =require('mongoose');
 
-// Schema for AddedFaculty
 const addedFacultySchema = new mongoose.Schema({
   hodUsername: { type: String, required: true }, // HOD's username making the request
   facultyUsername: { type: String, required: true }, // Faculty username
@@ -18,8 +16,9 @@ const addedFacultySchema = new mongoose.Schema({
     branch: { type: String, required: true }, // Branch of the faculty
     subject: { type: String, required: true } // Subject of the faculty
   },
-  masterAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // MasterAdmin ID
-}, { timestamps: true }); // Store timestamps when the document is created or updated
+  masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true }, // MasterAdmin ID
+}, 
+{ timestamps: true }); // Store timestamps when the document is created or updated
 
 const AddedFaculty = mongoose.model('HodRequest', addedFacultySchema);
 
