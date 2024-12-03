@@ -128,7 +128,7 @@ exports.updateFacultyHod = async (req, res) => {
         subject: subject || faculty.subject,
       },
       action: action || 'update',
-      masterAdminId: hod.masterAdmin,
+      masterAdmin: hod.masterAdmin,
     });
 
     // Save the request
