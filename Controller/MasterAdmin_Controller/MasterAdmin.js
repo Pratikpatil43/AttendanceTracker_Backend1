@@ -83,7 +83,7 @@ exports.LoginMasterAdmin = async (req, res) => {
       {
         _id: admin._id,        // Admin's _id
         role: admin.role,      // Admin's role
-        masterAdmin: admin.masterAdmin, // Reference to the root master admin
+        masterAdmin: admin.masterAdmin || 'root', // Reference to the root master admin
       },
       process.env.JWT_SECRET,
       { expiresIn: '1d' } // Token expiration set to 1 day
