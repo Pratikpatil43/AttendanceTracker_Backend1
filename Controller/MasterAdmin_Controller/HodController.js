@@ -126,19 +126,45 @@ exports.getMasterAdminDetails = async (req, res) => {
 // Function to remove an HOD by ID
 exports.removeHOD = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    // Find and delete the HOD by ID
-    const hod = await HOD.findByIdAndDelete(id);
-    if (!hod) {
-      return res.status(404).json({ message: 'HOD not found' });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required.' });
     }
 
-    res.status(200).json({ message: 'HOD removed successfully' });
+    // Verify the JWT
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(403).json({ message: 'Invalid or expired token.' });
+    }
+
+    const { _id: masterAdminId, role } = decodedToken;
+
+    // Ensure the user has the correct role
+    if (role !== 'masterAdmin') {
+      return res.status(403).json({ message: 'Not authorized. Only MasterAdmin can perform this action.' });
+    }
+
+    // Get the HOD's ID from the request URL
+    const hodId = req.params.id;
+
+    // Find the HOD and verify ownership by MasterAdmin
+    const hod = await HOD.findOne({ _id: hodId, masterAdmin: masterAdminId });
+    if (!hod) {
+      return res.status(404).json({ message: 'HOD not found or not associated with the MasterAdmin.' });
+    }
+
+    // Delete the HOD
+    await HOD.findByIdAndDelete(hodId);
+
+    res.status(200).json({ message: 'HOD removed successfully.' });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to remove HOD', error: error.message });
+    res.status(500).json({ message: 'Failed to remove HOD.', error: error.message });
   }
 };
+
+
 
 
 // Function to update an HOD by ID

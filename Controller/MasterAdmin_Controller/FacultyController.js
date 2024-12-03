@@ -121,28 +121,21 @@ exports.getFaculty = async (req, res) => {
 
 // Update Faculty (Update)
 exports.updateFaculty = async (req, res) => {
-  try {
-    const { id } = req.params; // Faculty ID
-    const { name, facultyUsername, password, branch, subject } = req.body;
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid Faculty ID format" });
+  }
 
-    // Find the faculty by ID and update the fields
-    const updatedFaculty = await Faculty.findByIdAndUpdate(
-      id,
-      { name, facultyUsername, password, branch, subject },
-      { new: true } // Return the updated document
-    );
+  try {
+    const updatedFaculty = await Faculty.findByIdAndUpdate(id, req.body, { new: true });
 
     if (!updatedFaculty) {
-      return res.status(404).json({ message: 'Faculty not found.' });
+      return res.status(404).json({ message: "Faculty not found" });
     }
 
-    res.status(200).json({
-      message: 'Faculty updated successfully.',
-      faculty: updatedFaculty,
-    });
-  } catch (error) {
-    console.error('Error updating faculty:', error);
-    res.status(500).json({ message: 'Failed to update faculty', error: error.message });
+    res.status(200).json(updatedFaculty);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating faculty", error: err.message });
   }
 };
 
@@ -150,25 +143,41 @@ exports.updateFaculty = async (req, res) => {
 
 // Delete Faculty (Remove)
 exports.removeFaculty = async (req, res) => {
-  const { id } = req.params;
-  
-  
-  if (!id) {
-    return res.status(400).json({ message: "Faculty ID is required." });
-  }
-
   try {
-    const deletedFaculty = await Faculty.findByIdAndDelete(id);
-    if (!deletedFaculty) {
-      return res.status(404).json({ message: "Faculty not found." });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required.' });
     }
 
-    res.status(200).json({
-      message: 'Faculty removed successfully.',
-      faculty: deletedFaculty,
-    });
+    // Verify the JWT
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(403).json({ message: 'Invalid or expired token.' });
+    }
+
+    const { _id: masterAdminId, role } = decodedToken;
+
+    // Ensure the user has the correct role
+    if (role !== 'masterAdmin') {
+      return res.status(403).json({ message: 'Not authorized. Only MasterAdmin can perform this action.' });
+    }
+
+    // Get the HOD's ID from the request URL
+    const facultyId = req.params.id;
+
+    // Find the HOD and verify ownership by MasterAdmin
+    const faculty = await Faculty.findOne({ _id: facultyId, masterAdmin: masterAdminId });
+    if (!hod) {
+      return res.status(404).json({ message: 'HOD not found or not associated with the MasterAdmin.' });
+    }
+
+    // Delete the HOD
+    await Faculty.findByIdAndDelete(facultyId);
+
+    res.status(200).json({ message: 'Faculty removed successfully.' });
   } catch (error) {
-    console.error("Error removing faculty:", error);
-    res.status(500).json({ message: 'Failed to remove faculty', error: error.message });
+    res.status(500).json({ message: 'Failed to remove HOD.', error: error.message });
   }
 };
