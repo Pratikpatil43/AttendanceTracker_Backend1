@@ -169,7 +169,7 @@ exports.removeFaculty = async (req, res) => {
 
     // Find the HOD and verify ownership by MasterAdmin
     const faculty = await Faculty.findOne({ _id: facultyId, masterAdmin: masterAdminId });
-    if (!hod) {
+    if (!faculty) {
       return res.status(404).json({ message: 'HOD not found or not associated with the MasterAdmin.' });
     }
 

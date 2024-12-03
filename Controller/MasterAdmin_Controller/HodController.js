@@ -173,6 +173,12 @@ exports.updateHOD = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Check if password is provided and hash it
+    if (updates.password) {
+      const salt = await bcrypt.genSalt(10); // Generate salt
+      updates.password = await bcrypt.hash(updates.password, salt); // Hash password
+    }
+
     // Find the HOD by ID and apply updates
     const updatedHOD = await HOD.findByIdAndUpdate(id, updates, { new: true });
     if (!updatedHOD) {
@@ -184,7 +190,6 @@ exports.updateHOD = async (req, res) => {
     res.status(500).json({ message: 'Failed to update HOD', error: error.message });
   }
 };
-
 
 
 
