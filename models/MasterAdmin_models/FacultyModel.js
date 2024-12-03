@@ -8,7 +8,7 @@ const facultySchema = new Schema({
   password: { type: String, required: true },
   branch: { type: String, required: true },
   subject: { type: String, required: true },
-  masterAdminId: { 
+  masterAdmin: { 
     type: mongoose.Schema.Types.ObjectId,  // Link to MasterAdmin using ObjectId
     ref: 'MasterAdmin',
     required: true 

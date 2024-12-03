@@ -13,7 +13,7 @@ const {
 router.post('/add', authenticateMasterAdmin, addFaculty);
 
 // Get Faculty by MasterAdmin ID
-router.get('/getFaculty', authenticateMasterAdmin, getFaculty);
+router.get('/getFaculty/:masterAdmin', authenticateMasterAdmin, getFaculty);
 
 // Update Faculty
 router.put('/update/:id', authenticateMasterAdmin, updateFaculty);

@@ -6,7 +6,7 @@ const requestSchema = new mongoose.Schema({
   facultyUsername: { type: String, required: true, ref: 'Faculty' },  // Faculty's username to be added/updated/deleted
   action: { type: String, enum: ['add', 'update', 'delete'], required: true },  // CRUD action (add/update/delete)
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },  // Status of the request
-  masterAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true },  // MasterAdmin reviewing the request
+  masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterAdmin', required: true },  // MasterAdmin reviewing the request
   requestedAt: { type: Date, default: Date.now },  // Timestamp of request
   approvedAt: { type: Date },  // Timestamp when approved
   rejectedAt: { type: Date },  // Timestamp when rejected
