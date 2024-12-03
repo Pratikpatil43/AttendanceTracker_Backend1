@@ -57,6 +57,39 @@ exports.RegisterMasterAdmin = async (req, res) => {
 
 
 
+exports.ForgotPasswordMasterAdmin = async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+
+    // Check if the username exists
+    const masterAdmin = await MasterAdmin.findOne({ username });
+    if (!masterAdmin) {
+      return res.status(404).json({ message: 'MasterAdmin with this username not found.' });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update the password directly without triggering the pre-save hook
+    await MasterAdmin.updateOne(
+      { username }, // Find the user by username
+      { $set: { password: hashedPassword } } // Update password with the hashed new password
+    );
+
+    // Optionally verify that the password was updated correctly
+    const updatedAdmin = await MasterAdmin.findOne({ username });
+    console.log('Updated Admin Password:', updatedAdmin.password); // Debugging
+
+    return res.status(200).json({ message: 'Password updated successfully. You can now log in with your new password.' });
+  } catch (error) {
+    console.error('Error updating password for MasterAdmin:', error.message);
+    return res.status(500).json({ message: 'Internal server error.', error: error.message });
+  }
+};
+
+
+
 
 
 
@@ -104,6 +137,33 @@ exports.LoginMasterAdmin = async (req, res) => {
   } catch (error) {
     console.error('Error logging in MasterAdmin:', error);
     return res.status(500).json({ message: 'Failed to log in', error: error.message });
+  }
+};
+
+
+
+// Route to fetch the MasterAdmin's profile
+exports.masterAdminprofile = async (req, res) => {
+  try {
+    // Fetch the MasterAdmin's data using the ID from the token
+    const masterAdmin = await MasterAdmin.findById(req.user._id);
+    if (!masterAdmin) {
+      return res.status(404).json({ message: 'MasterAdmin not found.' });
+    }
+
+    return res.status(200).json({
+      message: 'Profile fetched successfully.',
+      profile: {
+        id: masterAdmin._id,
+        name: masterAdmin.name,
+        username: masterAdmin.username,
+        role: masterAdmin.role,
+        masterAdmin: MasterAdmin.masterAdmin,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching MasterAdmin profile:', error.message);
+    return res.status(500).json({ message: 'Internal server error.', error: error.message });
   }
 };
 

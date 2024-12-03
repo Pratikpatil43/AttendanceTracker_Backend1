@@ -8,7 +8,9 @@ const {
     approveRemovalRequest,
     getRequests,
     getupdateRequests,
-    handleAction 
+    handleAction ,
+    masterAdminprofile,
+    ForgotPasswordMasterAdmin
 } = require('../../Controller/MasterAdmin_Controller/MasterAdmin');
 
 const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewares/authMiddleware')
@@ -17,6 +19,14 @@ const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewar
 // Route to add MasterAdmin
 router.post('/register', RegisterMasterAdmin);
 router.post('/login', LoginMasterAdmin);
+
+//fetch AdminMaster logged in data
+router.get('/profile',authenticateMasterAdmin, masterAdminprofile);
+
+router.put('/forgetPassword', ForgotPasswordMasterAdmin); 
+
+
+
 
 
 
