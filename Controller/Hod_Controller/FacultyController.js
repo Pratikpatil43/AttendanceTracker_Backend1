@@ -3,14 +3,40 @@ const HOD = require('../../models/MasterAdmin_models/HodModel');
 const AddedFaculty = require('../../models/MasterAdmin_models/FacultyModel');
 const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateRequest');
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
+const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
+const jwt = require('jsonwebtoken');
+
 
 
 
 
 // Route to create request for adding faculty
+const bcrypt = require('bcryptjs'); // Add bcrypt library
+
+// Route to create request for adding faculty
 exports.addFacultyHod = async (req, res) => {
   try {
     const { name, facultyUsername, password, branch, subject, type, action } = req.body;
+    
+       // Extract token from Authorization header
+       const token = req.headers.authorization?.split(' ')[1];
+       if (!token) {
+         return res.status(401).json({ message: 'Authorization token is required' });
+       }
+   
+       // Decode and verify JWT
+       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+       const masterAdminId = decodedToken._id;
+   
+       if (!masterAdminId) {
+         return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
+       }
+   
+       // Find MasterAdmin using _id
+       const masterAdmin = await HOD.findById(masterAdminId);
+       if (!masterAdmin) {
+         return res.status(404).json({ message: 'MasterAdmin not found' });
+       }
 
     // Ensure required fields are present
     if (!name || !facultyUsername || !password || !branch || !subject || !type || !action) {
@@ -24,18 +50,19 @@ exports.addFacultyHod = async (req, res) => {
       return res.status(404).json({ message: 'HOD not found' });
     }
 
-    const existingusername = await Request.findOne({facultyUsername})
+    const existingusername = await Faculty.findOne({facultyUsername});
     if(existingusername){
-      return res.status(404).json({ message: 'faculty Username already exists' });
-
-
+      return res.status(404).json({ message: 'Faculty Username already exists' });
     }
+
+    // Hash the faculty password
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash the password with salt rounds
 
     // Create a new request object for adding a faculty
     const newRequest = new Request({
       hodUsername: req.user.username, // Logged-in HOD's username
       facultyUsername, // Faculty username
-      password, // Faculty password
+      password: hashedPassword, // Save the hashed password
       branch, // Faculty branch
       subject, // Faculty subject
       type, // Type of request (create/update)
@@ -43,7 +70,7 @@ exports.addFacultyHod = async (req, res) => {
       data: {
         name, // Name of the faculty
         facultyUsername, // Faculty username
-        password, // Password
+        password: hashedPassword, // Password
         branch, // Branch
         subject // Subject
       },
@@ -98,6 +125,7 @@ exports.getFacultyHod = async (req, res) => {
 
 
 // HOD creates a request to update faculty
+// HOD creates a request to update faculty
 exports.updateFacultyHod = async (req, res) => {
   try {
     const { id } = req.params; // Faculty ID
@@ -115,6 +143,12 @@ exports.updateFacultyHod = async (req, res) => {
       return res.status(404).json({ message: 'HOD not found.' });
     }
 
+    // Hash the new password if provided
+    let hashedPassword = faculty.password; // Default to existing password if no new one provided
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10); // Hash new password
+    }
+
     // Create an update request with the data fetched from Faculty schema and the new data provided
     const updateRequest = new FacultyUpdateRequest({
       hodUsername: req.user.username,
@@ -123,7 +157,7 @@ exports.updateFacultyHod = async (req, res) => {
       data: {
         name: name || faculty.name, // If name is not provided, use existing faculty's name
         facultyUsername: facultyUsername || faculty.facultyUsername,
-        password: password || faculty.password,
+        password: hashedPassword, // Store the hashed password
         branch: branch || faculty.branch,
         subject: subject || faculty.subject,
       },
@@ -143,6 +177,8 @@ exports.updateFacultyHod = async (req, res) => {
     res.status(500).json({ message: 'Failed to create update request.', error: error.message });
   }
 };
+
+
 
 
 exports.removeFacultyHod = async (req, res) => {

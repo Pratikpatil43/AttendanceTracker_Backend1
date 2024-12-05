@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { HodLogin } = require('../../Controller/Hod_Controller/authController');
-const {getAllRequests, createRequest } = require('../../Controller/Hod_Controller/HodController');
+const {getAllRequests, createRequest,HodAdminprofile } = require('../../Controller/Hod_Controller/HodController');
 
 const {authenticateHod,roleCheckMiddleware} = require('../../middlewares/Hod_authMiddleware/auth');  // Your middleware for authentication
 const authenticateMasterAdmin = require('../../middlewares/masterAdmin_middlewares/authMiddleware')
@@ -14,12 +14,15 @@ const {
 } = require('../../Controller/Hod_Controller/FacultyController');  // Adjust the path if necessary
 
 //login for hod
-router.post('/login', HodLogin);  
+router.post('/login', HodLogin);                   
 
 // Add Faculty
 router.post('/addfaculty', authenticateHod, addFacultyHod);
 // Get Faculty by MasterAdmin ID
 router.get('/getFaculty', authenticateHod, getFacultyHod);
+
+router.get('/viewprofile', authenticateHod, HodAdminprofile);
+
 // Update Faculty
 router.put('/update/:id', authenticateHod, updateFacultyHod);
 // Remove Faculty

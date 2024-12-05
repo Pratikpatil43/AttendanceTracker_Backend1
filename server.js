@@ -7,6 +7,7 @@ const FacultyRoutes = require('./routes/Faculty_routes/faculty_route')
 const attendanceRoute = require('./routes/Faculty_routes/attendance_route');  // Make sure path is correct
 const masterAdminRoutes = require('./routes/MasterAdmin_routes/MasterAdminRoutes');
 const studentRoute = require('./routes/Student_routes/student_route')
+const HodAdminprofile = require('./routes/Hod_routes/HodRoutes')
 const connectDB = require('./config/db');
 const session = require('express-session'); // Import the session middleware
 const cors = require('cors');
@@ -41,6 +42,8 @@ app.use('/api/masterAdmin', masterAdminRoutes);
 
 // Routes for HOD
 app.use('/api/hod', hodRoutes);
+
+
                                                                                                                
 // Routes for Faculty
 app.use('/api/faculty', FacultyRoutes);

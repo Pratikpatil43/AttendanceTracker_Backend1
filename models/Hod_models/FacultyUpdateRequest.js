@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 // Define the schema for Faculty Update Requests
 const facultyUpdateRequestSchema = new Schema({
   hodUsername: { type: String, required: true }, // HOD's username
-  facultyUsername: { type: String, required: true }, // Username (cannot be updated but needs to be in the request)
+  facultyUsername: { type: String }, // Username (cannot be updated but needs to be in the request)
   password: { type: String }, // New password (optional)
   branch: { type: String }, // New branch (optional)
   subject: { type: String }, // New subject (optional)

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const HOD = require('../../models/MasterAdmin_models/HodModel');
 
 
+
 const createRequest = async (req, res) => {
   const { username, action } = req.body; // Faculty's username and action type
   try {
@@ -48,10 +49,37 @@ const getAllRequests = async (req, res) => {
 
 
 
+const HodAdminprofile = async (req, res) => {
+  try {
+    // Fetch the MasterAdmin's data using the ID from the token
+    const masterAdmin = await HOD.findById(req.user._id);
+    if (!masterAdmin) {
+      return res.status(404).json({ message: 'MasterAdmin not found.' });
+    }
+
+    return res.status(200).json({
+      message: 'Profile fetched successfully.',
+      profile: {
+        id: masterAdmin._id,
+        name: masterAdmin.name,
+        username: masterAdmin.username,
+        role: masterAdmin.role,
+        masterAdmin: masterAdmin.masterAdmin,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching MasterAdmin profile:', error.message);
+    return res.status(500).json({ message: 'Internal server error.', error: error.message });
+  }
+};
 
 
 
-module.exports = {getAllRequests,createRequest}
+
+
+
+
+module.exports = {getAllRequests,createRequest,HodAdminprofile}
 
 
 
