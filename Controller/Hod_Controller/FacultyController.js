@@ -5,12 +5,6 @@ const FacultyUpdateRequest = require('../../models/Hod_models/FacultyUpdateReque
 const Faculty = require('../../models/MasterAdmin_models/FacultyModel');
 const MasterAdmin = require('../../models/MasterAdmin_models/MasterAdminModel');
 const jwt = require('jsonwebtoken');
-
-
-
-
-
-// Route to create request for adding faculty
 const bcrypt = require('bcryptjs'); // Add bcrypt library
 
 // Route to create request for adding faculty
@@ -18,25 +12,25 @@ exports.addFacultyHod = async (req, res) => {
   try {
     const { name, facultyUsername, password, branch, subject, type, action } = req.body;
     
-       // Extract token from Authorization header
-       const token = req.headers.authorization?.split(' ')[1];
-       if (!token) {
-         return res.status(401).json({ message: 'Authorization token is required' });
-       }
-   
-       // Decode and verify JWT
-       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-       const masterAdminId = decodedToken._id;
-   
-       if (!masterAdminId) {
-         return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
-       }
-   
-       // Find MasterAdmin using _id
-       const masterAdmin = await HOD.findById(masterAdminId);
-       if (!masterAdmin) {
-         return res.status(404).json({ message: 'MasterAdmin not found' });
-       }
+    // Extract token from Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required' });
+    }
+
+    // Decode and verify JWT
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const masterAdminId = decodedToken._id;
+
+    if (!masterAdminId) {
+      return res.status(400).json({ message: 'MasterAdmin ID not found in token' });
+    }
+
+    // Find MasterAdmin using _id
+    const masterAdmin = await HOD.findById(masterAdminId);
+    if (!masterAdmin) {
+      return res.status(404).json({ message: 'MasterAdmin not found' });
+    }
 
     // Ensure required fields are present
     if (!name || !facultyUsername || !password || !branch || !subject || !type || !action) {
@@ -45,13 +39,12 @@ exports.addFacultyHod = async (req, res) => {
 
     // Fetch HOD details from the database using the logged-in HOD's username
     const hod = await HOD.findOne({ username: req.user.username });
-
     if (!hod) {
       return res.status(404).json({ message: 'HOD not found' });
     }
 
-    const existingusername = await Faculty.findOne({facultyUsername});
-    if(existingusername){
+    const existingusername = await Faculty.findOne({ facultyUsername });
+    if (existingusername) {
       return res.status(404).json({ message: 'Faculty Username already exists' });
     }
 
@@ -92,39 +85,6 @@ exports.addFacultyHod = async (req, res) => {
   }
 };
 
-
-
-// Get Faculty by username
-exports.getFacultyHod = async (req, res) => {
-  try {
-    // Fetch all faculty members from the database
-    const facultyMembers = await Faculty.find();
-
-    // If no faculty members are found
-    if (!facultyMembers || facultyMembers.length === 0) {
-      return res.status(404).json({ message: 'No faculty members found' });
-    }
-
-    // Return all faculty members with their MongoDB unique _id and relevant info
-    res.status(200).json({
-      facultyMembers: facultyMembers.map(faculty => ({
-        id: faculty._id,  // MongoDB unique ID
-        name: faculty.name, // Correct access to `name`
-        username: faculty.facultyUsername, // Adjust if the field is named differently
-        branch: faculty.branch,
-        subject: faculty.subject,
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching faculty members:', error);
-    res.status(500).json({ message: 'Failed to retrieve faculty members', error: error.message });
-  }
-};
-
-
-
-
-// HOD creates a request to update faculty
 // HOD creates a request to update faculty
 exports.updateFacultyHod = async (req, res) => {
   try {
@@ -177,6 +137,37 @@ exports.updateFacultyHod = async (req, res) => {
     res.status(500).json({ message: 'Failed to create update request.', error: error.message });
   }
 };
+
+
+
+// Get Faculty by username
+exports.getFacultyHod = async (req, res) => {
+  try {
+    // Fetch all faculty members from the database
+    const facultyMembers = await Faculty.find();
+
+    // If no faculty members are found
+    if (!facultyMembers || facultyMembers.length === 0) {
+      return res.status(404).json({ message: 'No faculty members found' });
+    }
+
+    // Return all faculty members with their MongoDB unique _id and relevant info
+    res.status(200).json({
+      facultyMembers: facultyMembers.map(faculty => ({
+        id: faculty._id,  // MongoDB unique ID
+        name: faculty.name, // Correct access to `name`
+        username: faculty.facultyUsername, // Adjust if the field is named differently
+        branch: faculty.branch,
+        subject: faculty.subject,
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching faculty members:', error);
+    res.status(500).json({ message: 'Failed to retrieve faculty members', error: error.message });
+  }
+};
+
+
 
 
 

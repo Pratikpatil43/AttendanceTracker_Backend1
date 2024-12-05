@@ -2,6 +2,7 @@ const Student = require('../../models/Faculty_models/FacultyaddStudent');
 const FacultySelection = require('../../models/Faculty_models/facultySelection');
 
 // Set Faculty Selection
+
 exports.setFacultySelection = async (req, res) => {
     const { branch, className, subject, date } = req.body;
 
@@ -16,7 +17,7 @@ exports.setFacultySelection = async (req, res) => {
         const selection = new FacultySelection({
             branch,
             className,
-            subject, // Save multiple subjects
+            subject: subject.length > 0 ? subject : [],  // Ensure subject is an array
             date
         });
 
@@ -32,31 +33,71 @@ exports.setFacultySelection = async (req, res) => {
 };
 
 
+exports.getSubjects = async (req, res) => {
+    const { branch, className } = req.query;
+
+    try {
+        // Log the incoming parameters for debugging
+        console.log('Fetching subjects for branch:', branch, 'and className:', className);
+
+        if (!branch || !className) {
+            return res.status(400).json({ error: 'Branch and Class Name are required.' });
+        }
+
+        // Query the database for subjects based on branch and className
+        const subjects = await FacultySelection.find({ branch, className });
+
+        // Log the results from the database
+        console.log('Found subjects:', subjects);
+
+        // If no subjects found, return an empty array
+        if (!subjects || subjects.length === 0) {
+            return res.status(404).json({ subject: [] });
+        }
+
+        // Extract the 'subject' field from the documents and return them
+        const subjectList = subjects.flatMap(subject => subject.subject);  // Flatten the subject arrays from each document
+        return res.status(200).json({ subject: subjectList });
+    } catch (error) {
+        console.error('Error fetching subjects:', error);
+        return res.status(500).json({ error: 'Server error' });
+    }
+};
+
+
 
 
 // Fetch Faculty Selection
 exports.getFacultySelection = async (req, res) => {
     try {
-        const selection = await FacultySelection.findOne({}).sort({ createdAt: -1 });
+        // Fetch all faculty selections
+        const selections = await FacultySelection.find({});
 
-        if (!selection) {
+        if (selections.length === 0) {
             return res.status(404).json({ message: 'No selection found. Please set a new selection.' });
         }
 
-        const expiryTime = 30 * 60 * 1000; // 30 minutes in milliseconds
-        const currentTime = new Date().getTime();
+        // Extract distinct values for branch, class, subject, and date
+        const branches = [...new Set(selections.map(selection => selection.branch))];
+        const classes = [...new Set(selections.map(selection => selection.className))];
+        const subject = [...new Set(selections.flatMap(selection => selection.subject))]; // Flatten the array of subjects
+        const dates = [...new Set(selections.map(selection => selection.date))];
 
-        if (currentTime - new Date(selection.createdAt).getTime() > expiryTime) {
-            await FacultySelection.deleteOne({ _id: selection._id });
-            return res.status(400).json({ message: 'Selection has expired. Please set a new selection.' });
-        }
-
-        res.status(200).json({ selection });
+        // Respond with the distinct options for each field
+        res.status(200).json({
+            branches,
+            classes,
+            subject,
+            dates
+        });
     } catch (error) {
         console.error('Error fetching faculty selection:', error);
         res.status(500).json({ message: 'Error fetching faculty selection.' });
     }
 };
+
+
+
 
 // Add Students
 exports.addStudent = async (req, res) => {
@@ -82,19 +123,14 @@ exports.addStudent = async (req, res) => {
             return res.status(400).json({ message: 'No subjects found in the faculty selection.' });
         }
 
-        // Check for existing student
-        const existingStudent = await Student.findOne({ studentUSN });
+        // Extract the last three digits of the studentUSN
+        const lastThreeDigits = studentUSN.slice(-3);
+
+        // Check if any existing student has the same last three digits in their studentUSN
+        const existingStudent = await Student.findOne({ studentUSN: { $regex: lastThreeDigits + '$' } });
 
         if (existingStudent) {
-            // If student exists, append new subjects, avoiding duplicates
-            const updatedSubjects = [...new Set([...existingStudent.subject, ...subject])];
-            existingStudent.subject = updatedSubjects;
-            await existingStudent.save();
-
-            return res.status(200).json({
-                message: 'Student updated with new subjects successfully',
-                student: existingStudent,
-            });
+            return res.status(400).json({ message: `A student with USN ending in ${lastThreeDigits} already exists.` });
         }
 
         // Create a new student document
@@ -105,11 +141,16 @@ exports.addStudent = async (req, res) => {
             branch,
             className,
             subject,
+            facultySelectionId: facultySelection._id, // Link the student to the faculty selection
         });
 
         await newStudent.save();
 
-        res.status(201).json({ message: 'Student added successfully', student: newStudent });
+        res.status(201).json({
+            message: 'Student added successfully',
+            student: newStudent,
+            facultySelection: facultySelection, // Return the associated selection
+        });
     } catch (error) {
         console.error('Error adding student:', error);
         res.status(500).json({ message: 'Error adding student', error });
