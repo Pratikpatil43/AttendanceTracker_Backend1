@@ -161,7 +161,6 @@ exports.addStudent = async (req, res) => {
 
 
 
-//getStudents for attendance
 exports.getStudentsBySelection = async (req, res) => {
     const { branch, className, subject } = req.body;
 
@@ -172,7 +171,7 @@ exports.getStudentsBySelection = async (req, res) => {
     try {
         // Fetch only studentUSN and studentName based on the selection
         const students = await Student.find({ branch, className, subject })
-            .select('studentUSN studentName'); // Select only the necessary fields
+            .select('studentUSN studentName isLateralEntry'); // Select only the necessary fields
 
         if (students.length === 0) {
             return res.status(404).json({ message: 'No students found for the given selection.' });
@@ -191,8 +190,14 @@ exports.getStudentsBySelection = async (req, res) => {
             return lastDigitsA - lastDigitsB; // Numerical sort in ascending order
         });
 
-        // Return the sorted student records
-        res.status(200).json({ students: sortedStudents });
+        // Modify the 'isLateralEntry' field to display "Yes" or "No"
+        const formattedStudents = sortedStudents.map(student => ({
+            ...student.toObject(),
+            isLateralEntry: student.isLateralEntry ? 'Yes' : 'No', // Check true/false and set "Yes" or "No"
+        }));
+
+        // Return the sorted and formatted student records
+        res.status(200).json({ students: formattedStudents });
     } catch (error) {
         console.error('Error fetching students:', error);
         res.status(500).json({ message: 'Error fetching students', error });
@@ -201,37 +206,41 @@ exports.getStudentsBySelection = async (req, res) => {
 
 
 
+
+
 // Update Student Details Using studentUSN
 exports.updateStudent = async (req, res) => {
     const { studentUSN, studentName, isLateralEntry } = req.body;
 
-    // Validate required fields
-    if (!studentUSN || !studentName || isLateralEntry === undefined) {
-        return res.status(400).json({ message: 'All fields are required.' });
+    if (!studentUSN) {
+        return res.status(400).json({ error: 'Student USN is required' });
     }
 
     try {
-        // Find the student by studentUSN
-        const student = await Student.findOne({ studentUSN });
+        // Update student data in the database
+        const updatedStudent = await Student.findOneAndUpdate(
+            { studentUSN }, // Match by USN
+            { studentName, isLateralEntry }, // Update fields based on request
+            { new: true } // Return updated document
+        );
 
-        // Check if student exists
-        if (!student) {
-            return res.status(404).json({ message: 'Student not found.' });
+        if (!updatedStudent) {
+            return res.status(404).json({ error: 'Student not found' });
         }
 
-        // Update student details
-        student.studentName = studentName;
-        student.isLateralEntry = isLateralEntry;
-
-        // Save updated student
-        await student.save();
-
-        res.status(200).json({ message: 'Student updated successfully', student });
+        res.status(200).json({
+            message: 'Student updated successfully',
+            student: updatedStudent,
+        });
     } catch (error) {
         console.error('Error updating student:', error);
-        res.status(500).json({ message: 'Error updating student', error });
+        res.status(500).json({ error: 'An error occurred while updating the student.' });
     }
 };
+
+
+
+
 
 // Delete Student Using studentUSN
 exports.deleteStudent = async (req, res) => {
@@ -255,5 +264,36 @@ exports.deleteStudent = async (req, res) => {
     } catch (error) {
         console.error('Error deleting student:', error);
         res.status(500).json({ message: 'Error deleting student', error });
+    }
+};
+
+
+
+
+exports.getFacultySelected = async (req, res) => {
+    try {
+        // Fetch all faculty selections
+        const selections = await Student.find({});
+
+        if (selections.length === 0) {
+            return res.status(404).json({ message: 'No selection found. Please set a new selection.' });
+        }
+
+        // Extract distinct values for branch, class, subject, and date
+        const branches = [...new Set(selections.map(selection => selection.branch))];
+        const classes = [...new Set(selections.map(selection => selection.className))];
+        const subject = [...new Set(selections.flatMap(selection => selection.subject))]; // Flatten the array of subjects
+        // const dates = [...new Set(selections.map(selection => selection.date))];
+
+        // Respond with the distinct options for each field
+        res.status(200).json({
+            branches,
+            classes,
+            subject,
+            // dates
+        });
+    } catch (error) {
+        console.error('Error fetching faculty selection:', error);
+        res.status(500).json({ message: 'Error fetching faculty selection.' });
     }
 };

@@ -71,10 +71,50 @@ exports.markAttendance = async (req, res) => {
 
 
 
+// Route to update student attendance
+exports.updateAttendance = async (req, res) => {
+    const {id} = req.params
+    const {status } = req.body;
+
+    // Check if the required fields are provided
+    if (!id || !status) {
+        return res.status(400).json({ message: 'ID and status are required.' });
+    }
+
+    // Ensure the status is either "Present" or "Absent"
+    if (status !== 'present' && status !== 'absent') {
+        return res.status(400).json({ message: 'Invalid status selected.' });
+    }
+
+    try {
+        // Find the attendance record by its MongoDB _id and update the status
+        const attendance = await Attendance.findByIdAndUpdate(
+            id,  // Find by MongoDB _id
+            { status },  // Update status field
+            { new: true } // Return the updated document
+        );
+
+        // If no record is found, return a 404 error
+        if (!attendance) {
+            return res.status(404).json({ message: 'Attendance record not found.' });
+        }
+
+        // Return success message and the updated attendance record
+        res.status(200).json({ message: 'Attendance updated successfully', attendance });
+    } catch (error) {
+        console.error('Error updating attendance:', error);
+        res.status(500).json({ message: 'Error updating attendance', error });
+    }
+};
+
+
+
+
+
 
 // Route to fetch attendance
 exports.getAttendance = async (req, res) => {
-    const { subject, branch, className, attendanceDate } = req.body;
+    const { subject, branch, className, attendanceDate } = req.query;
 
     if (!subject || !branch || !className || !attendanceDate) {
         return res.status(400).json({ message: 'Subject, branch, class, and date are required.' });
@@ -118,31 +158,3 @@ exports.getAttendance = async (req, res) => {
 
 
 
-
-// Route to update student attendance
-exports.updateAttendance = async (req, res) => {
-    const { studentUSN, subject, branch, className, attendanceDate, status } = req.body;
-
-    if (!studentUSN || !subject || !branch || !className || !attendanceDate || !status) {
-        return res.status(400).json({ message: 'All fields are required.' });
-    }
-
-    try {
-        // Find the attendance record by studentUSN, subject, branch, class, and date
-        const attendance = await Attendance.findOneAndUpdate(
-            { studentUSN, subject, branch, className, attendanceDate },
-            { status },
-            { new: true } // Return the updated document
-        );
-
-        // Check if the attendance record was found
-        if (!attendance) {
-            return res.status(404).json({ message: 'Attendance record not found.' });
-        }
-
-        res.status(200).json({ message: 'Attendance updated successfully', attendance });
-    } catch (error) {
-        console.error('Error updating attendance:', error);
-        res.status(500).json({ message: 'Error updating attendance', error });
-    }
-};

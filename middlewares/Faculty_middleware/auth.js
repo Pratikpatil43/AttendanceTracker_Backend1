@@ -16,12 +16,12 @@ exports.authenticateFaculty = (req, res, next) => {
 
 
 
-  // exports.roleCheckMiddleware = (requiredRole='faculty') => {
-  //   return (req, res, next) => {
-  //     if (!req.user || req.user.role !== faculty.requiredRole) {
-  //       return res.status(403).json({ message: "Access denied. You do not have the required role." });
-  //     }
-  //     next();
-  //   };
-  // };
+//   exports.roleCheckMiddleware = (requiredRole='faculty') => {
+//     return (req, res, next) => {
+//       if (!req.user || req.user.role !== faculty.requiredRole) {
+//         return res.status(403).json({ message: "Access denied. You do not have the required role." });
+//       }
+//       next();
+//     };
+//   };
   

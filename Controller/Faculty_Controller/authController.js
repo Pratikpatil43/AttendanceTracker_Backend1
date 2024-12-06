@@ -72,3 +72,35 @@ exports.ForgotPasswordFaculty = async (req, res) => {
       return res.status(500).json({ message: 'Internal server error.', error: error.message });
     }
   };
+
+
+
+
+
+  exports.facultyAdminprofile = async (req, res) => {
+    try {
+      // Get the user info from the decoded JWT token (this should contain at least the user ID)
+      const faculty = req.user; // This contains the user data (e.g., from JWT)
+  
+      // Fetch additional user details (e.g., name, branch, subject) from your database using the user ID
+      const userDetails = await Faculty.findById(faculty.id); // Assuming 'id' is stored in the JWT
+  
+      // If user is not found in the database
+      if (!userDetails) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Send the user details back in the response
+      res.status(200).json({
+        message: 'Profile fetched successfully',
+        user: {
+          name: userDetails.name,
+          facultyUsername: userDetails.facultyUsername,
+          branch: userDetails.branch,
+          subject: userDetails.subject,
+          },
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching profile', error });
+    }
+  };
