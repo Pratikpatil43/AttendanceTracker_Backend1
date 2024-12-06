@@ -19,7 +19,8 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-  origin: 'http://localhost:5173'  // Only allow requests from your frontend
+  origin: ['http://localhost:5173','http://localhost:5174',' http://localhost:5175','http://localhost:5176'], // add the URLs of your frontends
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
 app.use(session({
