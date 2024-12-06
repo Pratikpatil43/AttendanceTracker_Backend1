@@ -24,7 +24,7 @@ exports.FacultyLogin = async (req, res) => {
         const token = jwt.sign(
             { id: faculty._id, role: 'faculty' }, // Payload
             process.env.JWT_SECRET || 'your_jwt_secret', // Secret key
-            { expiresIn: '1h' } // Token expiration
+            { expiresIn: '10h' } // Token expiration
         );
 
         // Return the token to the client

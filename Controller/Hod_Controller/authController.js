@@ -18,7 +18,7 @@ exports.HodLogin = async (req, res) => {
     const token = jwt.sign(
       { _id: hod._id, username: hod.username, role: 'hod' },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '6h' }
     );
 
     res.status(200).json({ message: 'Login successful', token });

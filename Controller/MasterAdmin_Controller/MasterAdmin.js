@@ -119,7 +119,7 @@ exports.LoginMasterAdmin = async (req, res) => {
         masterAdmin: admin.masterAdmin || 'root', // Reference to the root master admin
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' } // Token expiration set to 1 day
+      { expiresIn: '4h' } // Token expiration set to 1 day
     );
 
     // Return the response with token and admin details
