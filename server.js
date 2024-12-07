@@ -24,6 +24,7 @@ app.use(express.json());
 const allowedOrigins = [
   'https://hodadmin.vercel.app',
   'https://masteradmin.vercel.app',
+  'https://facultyadmin.vercel.app'
 ];
 
 // Configure CORS
