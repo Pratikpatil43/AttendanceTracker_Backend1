@@ -19,9 +19,12 @@ const app = express();
 // Middleware to parse JSON
 app.use(express.json());
 
+// Allow requests from specific origins
+const allowedOrigins = ['https://hodadmin.vercel.app'];
+
 // Configure CORS
 app.use(cors({
-  origin: ['https://facultyadminfrontend.vercel.app', 'https://hodadmin.vercel.app', 'http://localhost:5176'], // Allowed origins
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
   credentials: true, // Allow cookies and credentials
 }));
