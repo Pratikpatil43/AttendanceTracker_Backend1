@@ -21,7 +21,7 @@ app.use(express.json());
 
 // Configure CORS
 app.use(cors({
-  origin: ['https://facultyadminfrontend.vercel.app', 'https://hodadmin-6wht.vercel.app', 'http://localhost:5176'], // Allowed origins
+  origin: ['https://facultyadminfrontend.vercel.app', 'https://hodadmin.vercel.app', 'http://localhost:5176'], // Allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
   credentials: true, // Allow cookies and credentials
 }));
