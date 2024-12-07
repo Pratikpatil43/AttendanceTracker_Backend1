@@ -20,7 +20,7 @@ const app = express();
 app.use(express.json());
 
 // Allow requests from specific origins
-const allowedOrigins = ['https://hodadmin.vercel.app'];
+const allowedOrigins = ['https://hodadmin.vercel.app','https://masteradmin.vercel.app'];
 
 // Configure CORS
 app.use(cors({
