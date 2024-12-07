@@ -1,39 +1,44 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const session = require('express-session');
+const cors = require('cors');
+
+// Import route files
 const masterAdminhodRoutes = require('./routes/MasterAdmin_routes/hodRoutes');
 const hodRoutes = require('./routes/Hod_routes/HodRoutes');
 const masterAdminFacultyRoutes = require('./routes/MasterAdmin_routes/FacultyRoutes');
-const FacultyRoutes = require('./routes/Faculty_routes/faculty_route')
-const attendanceRoute = require('./routes/Faculty_routes/attendance_route');  // Make sure path is correct
+const FacultyRoutes = require('./routes/Faculty_routes/faculty_route');
+const attendanceRoute = require('./routes/Faculty_routes/attendance_route');
 const masterAdminRoutes = require('./routes/MasterAdmin_routes/MasterAdminRoutes');
-const studentRoute = require('./routes/Student_routes/student_route')
-const HodAdminprofile = require('./routes/Hod_routes/HodRoutes')
+const studentRoute = require('./routes/Student_routes/student_route');
 const connectDB = require('./config/db');
-const session = require('express-session'); // Import the session middleware
-const cors = require('cors');
 
-
+// Initialize app
 const app = express();
 
-// Middleware
+// Middleware to parse JSON
 app.use(express.json());
 
+// Configure CORS
 app.use(cors({
-  origin: ['http://localhost:5173','http://localhost:5174',' http://localhost:5175','http://localhost:5176'], // add the URLs of your frontends
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'], // Allowed origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+  credentials: true, // Allow cookies and credentials
 }));
 
+// Configure session
 app.use(session({
-  secret: 'hushfsdhfj65634hoiuhftwebhber454&^^#$*',  // Secret key for signing the session ID cookie
-  resave: false,  // Don't save session if it's not modified
-  saveUninitialized: true,  // Store a session even if it's not initialized
+  secret: 'hushfsdhfj65634hoiuhftwebhber454&^^#$*', // Secret key for signing the session ID cookie
+  resave: false, // Don't save session if not modified
+  saveUninitialized: true, // Store session even if not initialized
   cookie: { 
-    secure: false,  // Set to true if using HTTPS
-    maxAge: 2 * 60 * 60 * 1000  // 2 hours in milliseconds
-  }
+    secure: false, // Set to true if using HTTPS
+    maxAge: 2 * 60 * 60 * 1000, // Session cookie expiry: 2 hours
+    sameSite: 'lax', // Ensure compatibility with CORS
+  },
 }));
 
-// Database Connection
+// Connect to MongoDB
 connectDB();
 
 // Routes for Master Admin
@@ -44,16 +49,23 @@ app.use('/api/masterAdmin', masterAdminRoutes);
 // Routes for HOD
 app.use('/api/hod', hodRoutes);
 
-
-                                                                                                               
 // Routes for Faculty
 app.use('/api/faculty', FacultyRoutes);
 
-// Faculty Attendance
-app.use('/api/faculty/attendance', attendanceRoute);  // Ensure this path is correct
+// Faculty Attendance Routes
+app.use('/api/faculty/attendance', attendanceRoute);
 
-//Student Routes
+// Student Routes
 app.use('/api/student', studentRoute);
+
+// Debugging Middleware (Optional)
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url} from ${req.headers.origin}`);
+  next();
+});
+
+// Handle Preflight Requests
+app.options('*', cors()); // Ensure preflight (OPTIONS) requests pass CORS checks
 
 // Start Server
 const PORT = process.env.PORT || 5000;
