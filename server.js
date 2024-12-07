@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const cors = require('cors');
+require('dotenv').config(); // Load environment variables
 
 // Import route files
 const masterAdminhodRoutes = require('./routes/MasterAdmin_routes/hodRoutes');
@@ -20,26 +21,33 @@ const app = express();
 app.use(express.json());
 
 // Allow requests from specific origins
-const allowedOrigins = ['https://hodadmin.vercel.app','https://masteradmin.vercel.app'];
+const allowedOrigins = [
+  'https://hodadmin.vercel.app',
+  'https://masteradmin.vercel.app',
+];
 
 // Configure CORS
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-  credentials: true, // Allow cookies and credentials
-}));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    credentials: true, // Allow cookies and credentials
+  })
+);
 
 // Configure session
-app.use(session({
-  secret: 'hushfsdhfj65634hoiuhftwebhber454&^^#$*', // Secret key for signing the session ID cookie
-  resave: false, // Don't save session if not modified
-  saveUninitialized: true, // Store session even if not initialized
-  cookie: { 
-    secure: false, // Set to true if using HTTPS
-    maxAge: 2 * 60 * 60 * 1000, // Session cookie expiry: 2 hours
-    sameSite: 'lax', // Ensure compatibility with CORS
-  },
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'defaultSecret', // Secret key for signing the session ID cookie
+    resave: false, // Don't save session if not modified
+    saveUninitialized: true, // Store session even if not initialized
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production', // Set to true if using HTTPS in production
+      maxAge: 2 * 60 * 60 * 1000, // Session cookie expiry: 2 hours
+      sameSite: 'lax', // Ensure compatibility with CORS
+    },
+  })
+);
 
 // Connect to MongoDB
 connectDB();
@@ -67,8 +75,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Handle Preflight Requests
-app.options('*', cors()); // Ensure preflight (OPTIONS) requests pass CORS checks
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(`Error: ${err.message}`);
+  res.status(err.status || 500).json({ error: err.message });
+});
 
 // Start Server
 const PORT = process.env.PORT || 5000;
