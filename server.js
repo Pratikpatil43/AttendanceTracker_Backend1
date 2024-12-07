@@ -28,18 +28,24 @@ const allowedOrigins = [
   'https://studentdashboard-nine.vercel.app'
 ];
 
-// Configure CORS
+// Configure CORS middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', origin); // Allow specific origin
+    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Enable cookies
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    ); // Allowed HTTP methods
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With, Origin, Accept'
+    ); // Allowed headers
+  } else {
+    console.warn(`Blocked request from origin: ${origin}`);
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, Origin, Accept'
-  );
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
   if (req.method === 'OPTIONS') {
     res.sendStatus(200); // Handle preflight requests
   } else {
@@ -52,8 +58,8 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET || 'defaultSecret', // Secret key for signing the session ID cookie
     resave: false, // Don't save session if not modified
-    saveUninitialized: true, // Store session even if not initialized
-    cookie: { 
+    saveUninitialized: false, // Do not store session unless explicitly initialized
+    cookie: {
       secure: process.env.NODE_ENV === 'production', // Set to true if using HTTPS in production
       maxAge: 2 * 60 * 60 * 1000, // Session cookie expiry: 2 hours
       sameSite: 'lax', // Ensure compatibility with CORS
@@ -90,7 +96,10 @@ app.use((req, res, next) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error(`Error: ${err.message}`);
-  res.status(err.status || 500).json({ error: err.message });
+  res.status(err.status || 500).json({
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined, // Show stack trace only in development
+  });
 });
 
 // Start Server
